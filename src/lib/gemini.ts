@@ -44,7 +44,7 @@ export async function chatWithHoshino(
   contents.push({ role: "user", parts: [{ text: userMessage }] });
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.0-flash",
+    model: "gemini-3.6-flash",
     contents,
     config: {
       systemInstruction: SYSTEM_PROMPT,
