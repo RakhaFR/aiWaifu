@@ -2,12 +2,14 @@
 
 import { useState, useCallback } from "react";
 import type { ChatMessage } from "@/lib/gemini";
-import type { Emotion } from "@/lib/emotionMap";
+import type { Emotion, CostumeType } from "@/lib/emotionMap";
 
 export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentEmotion, setCurrentEmotion] = useState<Emotion>("neutral");
+  const [currentCostume, setCurrentCostume] = useState<CostumeType>("default");
+  const [currentBackground, setCurrentBackground] = useState<string>("committee_room");
 
   const sendMessage = useCallback(
     async (text: string, apiKey: string) => {
@@ -43,14 +45,18 @@ export function useChat() {
             role: "hoshino",
             text: data.message,
             emotion: data.emotion,
+            costume: data.costume,
+            background: data.background,
           };
           setMessages((prev) => [...prev, hoshinoMsg]);
-          setCurrentEmotion(data.emotion);
+          if (data.emotion) setCurrentEmotion(data.emotion);
+          if (data.costume) setCurrentCostume(data.costume);
+          if (data.background) setCurrentBackground(data.background);
         }
       } catch {
         const errMsg: ChatMessage = {
           role: "hoshino",
-          text: "Zzz... koneksi terputus, Sensei...",
+          text: "Uhe~ Sensei... sepertinya koneksi terputus...",
           emotion: "sleepy",
         };
         setMessages((prev) => [...prev, errMsg]);
@@ -67,5 +73,15 @@ export function useChat() {
     setCurrentEmotion("neutral");
   }, []);
 
-  return { messages, loading, currentEmotion, sendMessage, clearMessages };
+  return {
+    messages,
+    loading,
+    currentEmotion,
+    currentCostume,
+    currentBackground,
+    setCurrentCostume,
+    setCurrentBackground,
+    sendMessage,
+    clearMessages,
+  };
 }

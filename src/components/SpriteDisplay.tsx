@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useMemo, useState, useEffect, useRef } from "react";
-import type { Emotion } from "@/lib/emotionMap";
+import type { Emotion, CostumeType } from "@/lib/emotionMap";
 import { getSpriteIndex, getSpritePath } from "@/lib/emotionMap";
 
 interface SpriteTransform {
@@ -13,17 +13,23 @@ interface SpriteTransform {
 
 interface Props {
   emotion: Emotion;
-  costume: "default" | "sportswear";
+  costume: CostumeType;
   isEditMode: boolean;
+  isThinking: boolean;
 }
 
 const DEFAULT_TRANSFORM: SpriteTransform = {
-  x: -80,
-  y: 60,
+  x: -100,
+  y: 40,
   scale: 1.45,
 };
 
-export default function SpriteDisplay({ emotion, costume, isEditMode }: Props) {
+export default function SpriteDisplay({
+  emotion,
+  costume,
+  isEditMode,
+  isThinking,
+}: Props) {
   const [transform, setTransform] = useState<SpriteTransform>(DEFAULT_TRANSFORM);
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0 });
@@ -36,7 +42,7 @@ export default function SpriteDisplay({ emotion, costume, isEditMode }: Props) {
         setTransform(JSON.parse(saved));
       }
     } catch {
-      // fallback to default
+      // fallback
     }
   }, []);
 
@@ -45,7 +51,11 @@ export default function SpriteDisplay({ emotion, costume, isEditMode }: Props) {
     localStorage.setItem("hoshino_sprite_transform", JSON.stringify(t));
   };
 
-  const spriteIdx = useMemo(() => getSpriteIndex(emotion), [emotion]);
+  const effectiveEmotion: Emotion = isThinking ? "thinking" : emotion;
+  const spriteIdx = useMemo(
+    () => getSpriteIndex(costume, effectiveEmotion),
+    [costume, effectiveEmotion]
+  );
   const src = getSpritePath(costume, spriteIdx);
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -132,12 +142,12 @@ export default function SpriteDisplay({ emotion, costume, isEditMode }: Props) {
         <Image
           key={`${costume}-${spriteIdx}`}
           src={src}
-          alt={`Hoshino - ${emotion}`}
+          alt={`Hoshino - ${effectiveEmotion}`}
           width={600}
           height={900}
           priority
           draggable={false}
-          className="object-contain h-[75vh] w-auto animate-[fadeIn_0.25s_ease-in-out] drop-shadow-[0_10px_25px_rgba(0,0,0,0.6)]"
+          className="object-contain h-[78vh] w-auto animate-[fadeIn_0.2s_ease-in-out] drop-shadow-[0_12px_30px_rgba(0,0,0,0.65)]"
         />
       </div>
     </div>

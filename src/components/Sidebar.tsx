@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import type { CostumeType } from "@/lib/emotionMap";
+import { BACKGROUND_MAP } from "@/lib/emotionMap";
 
 interface Props {
   apiKey: string;
   onApiKeyChange: (key: string) => void;
-  costume: "default" | "sportswear";
-  onCostumeChange: (c: "default" | "sportswear") => void;
+  costume: CostumeType;
+  onCostumeChange: (c: CostumeType) => void;
   onClearChat: () => void;
   isEditMode: boolean;
   onToggleEditMode: () => void;
@@ -31,9 +33,9 @@ const ICONS = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
     </svg>
   ),
-  palette: (
+  scenery: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} className="w-5 h-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4.098 19.902a3.75 3.75 0 0 0 5.304 0l6.401-6.402M6.75 21A3.75 3.75 0 0 1 3 17.25V4.125C3 3.504 3.504 3 4.125 3h5.25c.621 0 1.125.504 1.125 1.125v4.072M6.75 21a3.75 3.75 0 0 0 3.75-3.75V8.197M6.75 21h13.125c.621 0 1.125-.504 1.125-1.125v-5.25c0-.621-.504-1.125-1.125-1.125h-4.072M10.5 8.197l9.75 9.75" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
     </svg>
   ),
   trash: (
@@ -41,14 +43,9 @@ const ICONS = {
       <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
     </svg>
   ),
-  info: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} className="w-5 h-5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
-    </svg>
-  ),
 };
 
-type Panel = "settings" | "costume" | "background" | "about" | null;
+type Panel = "settings" | "costume" | "scenery" | null;
 
 export default function Sidebar({
   apiKey,
@@ -86,7 +83,7 @@ export default function Sidebar({
             onClick={onToggleEditMode}
             className={`p-2.5 rounded-xl transition-all ${
               isEditMode
-                ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/50 scale-105"
+                ? "bg-cyan-400 text-black shadow-lg shadow-cyan-500/50 scale-105"
                 : "text-white/70 hover:text-cyan-300 hover:bg-white/10"
             }`}
             title={isEditMode ? "Lock Sprite Position" : "Move & Scale Sprite"}
@@ -101,21 +98,21 @@ export default function Sidebar({
                 ? "bg-white/20 text-cyan-300"
                 : "text-white/70 hover:text-cyan-300 hover:bg-white/10"
             }`}
-            title="Costumes"
+            title="Costume (Interactive auto / Manual)"
           >
             {ICONS.costume}
           </button>
 
           <button
-            onClick={() => togglePanel("background")}
+            onClick={() => togglePanel("scenery")}
             className={`p-2.5 rounded-xl transition-all ${
-              panel === "background"
+              panel === "scenery"
                 ? "bg-white/20 text-cyan-300"
                 : "text-white/70 hover:text-cyan-300 hover:bg-white/10"
             }`}
-            title="Background Room"
+            title="Scenery (Interactive auto / Manual)"
           >
-            {ICONS.palette}
+            {ICONS.scenery}
           </button>
 
           <button
@@ -125,21 +122,9 @@ export default function Sidebar({
                 ? "bg-white/20 text-cyan-300"
                 : "text-white/70 hover:text-cyan-300 hover:bg-white/10"
             }`}
-            title="API Settings"
+            title="API Key Settings"
           >
             {ICONS.settings}
-          </button>
-
-          <button
-            onClick={() => togglePanel("about")}
-            className={`p-2.5 rounded-xl transition-all ${
-              panel === "about"
-                ? "bg-white/20 text-cyan-300"
-                : "text-white/70 hover:text-cyan-300 hover:bg-white/10"
-            }`}
-            title="About"
-          >
-            {ICONS.info}
           </button>
 
           <div className="flex-1" />
@@ -147,7 +132,7 @@ export default function Sidebar({
           <button
             onClick={onClearChat}
             className="p-2.5 rounded-xl text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-            title="Clear Chat History"
+            title="Clear Chat"
           >
             {ICONS.trash}
           </button>
@@ -168,10 +153,9 @@ export default function Sidebar({
         <div className="fixed left-16 top-6 z-50 w-80 bg-[#0d1424]/95 backdrop-blur-2xl border border-cyan-500/20 rounded-2xl p-5 shadow-2xl shadow-black/80 text-white animate-[fadeIn_0.2s_ease-out]">
           <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
             <h3 className="font-semibold text-sm tracking-wide text-cyan-200">
-              {panel === "settings" && "API Settings"}
+              {panel === "settings" && "API Key Settings"}
               {panel === "costume" && "Hoshino Costumes"}
-              {panel === "background" && "Room Background"}
-              {panel === "about" && "About AI Waifu"}
+              {panel === "scenery" && "Scenery & Background"}
             </h3>
             <button
               onClick={() => {
@@ -208,20 +192,23 @@ export default function Sidebar({
                 >
                   aistudio.google.com
                 </a>
-                . Menggunakan model Gemini Flash untuk respon cepat & kuota reset harian.
               </p>
             </div>
           )}
 
           {panel === "costume" && (
             <div className="space-y-2">
+              <p className="text-[11px] text-cyan-300/80 mb-2">
+                ✨ Otomatis berganti sesuai konteks obrolan (pantai, olahraga, sekolah), atau pilih manual di bawah:
+              </p>
               {[
-                { id: "default", name: "Uniform (Abydos High)", desc: "Seragam sekolah klasik dengan hoodie" },
-                { id: "sportswear", name: "Sportswear (Gym PE)", desc: "Baju olahraga / jersey senam" },
+                { id: "default", name: "Uniform (Abydos High)", desc: "Seragam sekolah klasik" },
+                { id: "sportswear", name: "Sportswear (PE Tracksuit)", desc: "Baju olahraga / senam" },
+                { id: "swimsuit", name: "Swimsuit (Summer Diorama)", desc: "Baju renang + pelampung paus" },
               ].map((c) => (
                 <button
                   key={c.id}
-                  onClick={() => onCostumeChange(c.id as "default" | "sportswear")}
+                  onClick={() => onCostumeChange(c.id as CostumeType)}
                   className={`w-full text-left p-3 rounded-xl transition-all border ${
                     costume === c.id
                       ? "bg-cyan-500/20 border-cyan-400 text-white shadow-md shadow-cyan-500/10"
@@ -235,40 +222,31 @@ export default function Sidebar({
             </div>
           )}
 
-          {panel === "background" && (
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { id: "bedroom", label: "Anime Bedroom", color: "from-indigo-950 via-slate-900 to-sky-950" },
-                { id: "starry", label: "Starry Night", color: "from-blue-950 via-gray-950 to-slate-950" },
-                { id: "classroom", label: "Abydos Sunset", color: "from-amber-950 via-orange-950 to-slate-950" },
-                { id: "minimal", label: "Deep Navy Blue", color: "from-[#080d1a] to-[#04060d]" },
-              ].map((bg) => (
-                <button
-                  key={bg.id}
-                  onClick={() => onBgThemeChange(bg.id)}
-                  className={`p-3 rounded-xl border text-left flex flex-col gap-2 transition-all ${
-                    bgTheme === bg.id
-                      ? "border-cyan-400 bg-cyan-500/10"
-                      : "border-white/10 hover:border-white/30"
-                  }`}
-                >
-                  <div className={`h-12 w-full rounded-lg bg-gradient-to-br ${bg.color} shadow-inner`} />
-                  <span className="text-xs font-medium text-white/90">{bg.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {panel === "about" && (
-            <div className="space-y-3 text-xs leading-relaxed text-white/60">
-              <p>
-                <strong className="text-cyan-300">Takanashi Hoshino (小鳥遊ホシノ)</strong> — Karakter dari Blue Archive. Siswa kelas 3 & mantan ketua dewan OSIS Abydos.
+          {panel === "scenery" && (
+            <div className="space-y-3">
+              <p className="text-[11px] text-cyan-300/80 mb-2">
+                ✨ Scenery otomatis berganti saat kamu ajak Hoshino ke lokasi baru via chat!
               </p>
-              <p>
-                Sistem dilengkapi 38 ekspresi sprite 2D yang reaktif mengikuti emosi percakapan secara real-time.
-              </p>
-              <div className="p-2.5 rounded-lg bg-cyan-950/40 border border-cyan-500/20 text-cyan-200/80 text-[11px]">
-                💡 Tip: Klik ikon panah di pojok kiri atas untuk drag dan zoom sprite sesuka kamu!
+              <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
+                {Object.keys(BACKGROUND_MAP).map((bgKey) => (
+                  <button
+                    key={bgKey}
+                    onClick={() => onBgThemeChange(bgKey)}
+                    className={`p-2 rounded-xl border text-left flex flex-col gap-1.5 transition-all ${
+                      bgTheme === bgKey
+                        ? "border-cyan-400 bg-cyan-500/15"
+                        : "border-white/10 hover:border-white/30 bg-black/20"
+                    }`}
+                  >
+                    <div
+                      className="h-14 w-full rounded-lg bg-cover bg-center shadow-inner"
+                      style={{ backgroundImage: `url(${BACKGROUND_MAP[bgKey]})` }}
+                    />
+                    <span className="text-[11px] font-medium text-white/90 truncate capitalize">
+                      {bgKey.replace(/_/g, " ")}
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
           )}
