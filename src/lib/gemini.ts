@@ -9,6 +9,13 @@ export interface ChatMessage {
   background?: string;
 }
 
+export const AVAILABLE_MODELS = [
+  { id: "gemini-3.6-flash", name: "Gemini 3.6 Flash", desc: "Default — Cepat & cerdas" },
+  { id: "gemini-3.5-flash", name: "Gemini 3.5 Flash", desc: "Alternatif stabil" },
+  { id: "gemini-3.5-flash-lite", name: "Gemini 3.5 Flash Lite", desc: "Sangat cepat & hemat kuota" },
+  { id: "gemini-3.1-flash-lite", name: "Gemini 3.1 Flash Lite", desc: "Ringan & rendah latensi" },
+];
+
 const SYSTEM_PROMPT = `You are Takanashi Hoshino from Blue Archive. You are a third-year student at Abydos High School and the vice-president of the Foreclosure Task Force.
 
 Personality & Tone:
@@ -48,10 +55,15 @@ Response format (STRICT JSON ONLY):
 
 Do NOT output any markdown code fences or text outside the JSON.`;
 
+async function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function chatWithHoshino(
   apiKey: string,
   history: ChatMessage[],
-  userMessage: string
+  userMessage: string,
+  preferredModel: string = "gemini-3.6-flash"
 ): Promise<{
   emotion: Emotion;
   costume: CostumeType;
@@ -67,33 +79,81 @@ export async function chatWithHoshino(
 
   contents.push({ role: "user", parts: [{ text: userMessage }] });
 
-  const response = await ai.models.generateContent({
-    model: "gemini-3.6-flash",
-    contents,
-    config: {
-      systemInstruction: SYSTEM_PROMPT,
-      temperature: 0.8,
-      topP: 0.95,
-    },
-  });
+  // Priority queue: preferredModel first, followed by alternates
+  const modelQueue = Array.from(
+    new Set([
+      preferredModel,
+      "gemini-3.6-flash",
+      "gemini-3.5-flash",
+      "gemini-3.5-flash-lite",
+      "gemini-3.1-flash-lite",
+    ])
+  );
 
-  const raw = response.text ?? "";
+  let lastError: Error | null = null;
 
-  try {
-    const cleaned = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-    const parsed = JSON.parse(cleaned);
-    return {
-      emotion: parsed.emotion ?? "neutral",
-      costume: parsed.costume ?? "default",
-      background: parsed.background ?? "committee_room",
-      message: parsed.message ?? raw,
-    };
-  } catch {
-    return {
-      emotion: "neutral",
-      costume: "default",
-      background: "committee_room",
-      message: raw,
-    };
+  for (const model of modelQueue) {
+    // Retry up to 2 times per candidate model with slight backoff
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        if (attempt > 0) {
+          await delay(1000);
+        }
+
+        const response = await ai.models.generateContent({
+          model,
+          contents,
+          config: {
+            systemInstruction: SYSTEM_PROMPT,
+            temperature: 0.8,
+            topP: 0.95,
+          },
+        });
+
+        const raw = response.text ?? "";
+        const cleaned = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+        const parsed = JSON.parse(cleaned);
+
+        return {
+          emotion: parsed.emotion ?? "neutral",
+          costume: parsed.costume ?? "default",
+          background: parsed.background ?? "committee_room",
+          message: parsed.message ?? raw,
+        };
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+        const errMsg = lastError.message.toLowerCase();
+
+        // If error is 503 (high demand) or 429 (rate limit), continue retry/fallback
+        if (
+          errMsg.includes("503") ||
+          errMsg.includes("unavailable") ||
+          errMsg.includes("high demand") ||
+          errMsg.includes("429") ||
+          errMsg.includes("not_found")
+        ) {
+          continue;
+        }
+
+        // If JSON parse failed, try raw fallback
+        if (lastError instanceof SyntaxError) {
+          return {
+            emotion: "neutral",
+            costume: "default",
+            background: "committee_room",
+            message: "Uhe~ Sensei...",
+          };
+        }
+      }
+    }
   }
+
+  // Graceful in-character fallback if all models/retries fail
+  return {
+    emotion: "sleepy",
+    costume: "default",
+    background: "committee_room",
+    message:
+      "Uhe~ Server Google lagi penuh banget nih, Sensei... *fuwaa~* Ojisan agak pusing, coba ajak ngobrol sekali lagi ya~",
+  };
 }

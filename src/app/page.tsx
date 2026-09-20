@@ -31,6 +31,7 @@ function useLocalStorage(key: string, fallback: string) {
 
 export default function Home() {
   const [apiKey, setApiKey] = useLocalStorage("gemini_api_key", "");
+  const [selectedModel, setSelectedModel] = useLocalStorage("gemini_model", "gemini-3.6-flash");
   const [isEditMode, setIsEditMode] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [spriteTransform, setSpriteTransform] = useState<SpriteTransform>(DEFAULT_TRANSFORM);
@@ -68,7 +69,7 @@ export default function Home() {
       alert("Masukkan Google Gemini API key di menu Settings (hover sisi kiri layar).");
       return;
     }
-    sendMessage(text, apiKey);
+    sendMessage(text, apiKey, selectedModel);
   };
 
   const bgImage = BACKGROUND_MAP[currentBackground] || BACKGROUND_MAP.committee_room;
@@ -107,6 +108,8 @@ export default function Home() {
         onToggleEditMode={() => setIsEditMode((prev) => !prev)}
         bgTheme={currentBackground}
         onBgThemeChange={setCurrentBackground}
+        selectedModel={selectedModel}
+        onModelChange={setSelectedModel}
       />
 
       {/* 2D Sprite Layer */}

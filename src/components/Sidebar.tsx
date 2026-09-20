@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { CostumeType } from "@/lib/emotionMap";
 import { BACKGROUND_MAP } from "@/lib/emotionMap";
+import { AVAILABLE_MODELS } from "@/lib/gemini";
 
 interface Props {
   apiKey: string;
@@ -14,6 +15,8 @@ interface Props {
   onToggleEditMode: () => void;
   bgTheme: string;
   onBgThemeChange: (bg: string) => void;
+  selectedModel: string;
+  onModelChange: (model: string) => void;
 }
 
 const ICONS = {
@@ -57,6 +60,8 @@ export default function Sidebar({
   onToggleEditMode,
   bgTheme,
   onBgThemeChange,
+  selectedModel,
+  onModelChange,
 }: Props) {
   const [hovered, setHovered] = useState(false);
   const [panel, setPanel] = useState<Panel>(null);
@@ -122,7 +127,7 @@ export default function Sidebar({
                 ? "bg-white/20 text-cyan-300"
                 : "text-white/70 hover:text-cyan-300 hover:bg-white/10"
             }`}
-            title="API Key Settings"
+            title="API Key & Model Settings"
           >
             {ICONS.settings}
           </button>
@@ -150,10 +155,10 @@ export default function Sidebar({
       )}
 
       {panel && (
-        <div className="fixed left-16 top-6 z-50 w-80 bg-[#0d1424]/95 backdrop-blur-2xl border border-cyan-500/20 rounded-2xl p-5 shadow-2xl shadow-black/80 text-white animate-[fadeIn_0.2s_ease-out]">
+        <div className="fixed left-16 top-6 z-50 w-84 bg-[#0d1424]/95 backdrop-blur-2xl border border-cyan-500/20 rounded-2xl p-5 shadow-2xl shadow-black/80 text-white animate-[fadeIn_0.2s_ease-out]">
           <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
             <h3 className="font-semibold text-sm tracking-wide text-cyan-200">
-              {panel === "settings" && "API Key Settings"}
+              {panel === "settings" && "API & Model Settings"}
               {panel === "costume" && "Hoshino Costumes"}
               {panel === "scenery" && "Scenery & Background"}
             </h3>
@@ -169,7 +174,7 @@ export default function Sidebar({
           </div>
 
           {panel === "settings" && (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div>
                 <label className="text-white/70 text-xs block mb-1 font-medium">
                   Google Gemini API Key
@@ -182,7 +187,28 @@ export default function Sidebar({
                   className="w-full bg-white/[0.05] border border-cyan-500/30 rounded-xl px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50"
                 />
               </div>
-              <p className="text-white/40 text-[11px] leading-relaxed">
+
+              <div>
+                <label className="text-white/70 text-xs block mb-1 font-medium">
+                  Model AI (Dengan Auto-Fallback)
+                </label>
+                <select
+                  value={selectedModel}
+                  onChange={(e) => onModelChange(e.target.value)}
+                  className="w-full bg-[#121b2f] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400"
+                >
+                  {AVAILABLE_MODELS.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} — {m.desc}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-cyan-300/70 mt-1">
+                  ⚡ Jika model yang dipilih mengalami lonjakan trafik (503), sistem otomatis beralih ke model alternatif seketika.
+                </p>
+              </div>
+
+              <p className="text-white/40 text-[11px] leading-relaxed pt-1 border-t border-white/10">
                 Dapatkan API Key gratis di{" "}
                 <a
                   href="https://aistudio.google.com/apikey"
@@ -199,7 +225,7 @@ export default function Sidebar({
           {panel === "costume" && (
             <div className="space-y-2">
               <p className="text-[11px] text-cyan-300/80 mb-2">
-                ✨ Otomatis berganti sesuai konteks obrolan (pantai, olahraga, sekolah), atau pilih manual di bawah:
+                ✨ Otomatis berganti sesuai alur obrolan (pantai, olahraga, sekolah), atau pilih manual di bawah:
               </p>
               {[
                 { id: "default", name: "Uniform (Abydos High)", desc: "Seragam sekolah klasik" },

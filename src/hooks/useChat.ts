@@ -12,7 +12,7 @@ export function useChat() {
   const [currentBackground, setCurrentBackground] = useState<string>("committee_room");
 
   const sendMessage = useCallback(
-    async (text: string, apiKey: string) => {
+    async (text: string, apiKey: string, model?: string) => {
       if (!text.trim() || loading) return;
 
       const userMsg: ChatMessage = { role: "user", text };
@@ -27,6 +27,7 @@ export function useChat() {
             message: text,
             history: messages,
             apiKey,
+            model,
           }),
         });
 
@@ -35,11 +36,11 @@ export function useChat() {
         if (data.error) {
           const errMsg: ChatMessage = {
             role: "hoshino",
-            text: `Error: ${data.error}`,
-            emotion: "confused",
+            text: "Uhe~ Server lagi sibuk nih Sensei... Coba panggil ojisan sekali lagi ya~",
+            emotion: "sleepy",
           };
           setMessages((prev) => [...prev, errMsg]);
-          setCurrentEmotion("confused");
+          setCurrentEmotion("sleepy");
         } else {
           const hoshinoMsg: ChatMessage = {
             role: "hoshino",
@@ -56,7 +57,7 @@ export function useChat() {
       } catch {
         const errMsg: ChatMessage = {
           role: "hoshino",
-          text: "Uhe~ Sensei... sepertinya koneksi terputus...",
+          text: "Uhe~ Sensei... sepertinya koneksi terputus sebentar...",
           emotion: "sleepy",
         };
         setMessages((prev) => [...prev, errMsg]);
