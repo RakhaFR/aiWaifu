@@ -14,34 +14,34 @@ export type Emotion =
 
 export type CostumeType = "default" | "sportswear" | "swimsuit";
 
-export const EMOTION_SPRITES_DEFAULT: Record<Emotion, number[]> = {
-  neutral: [0, 1],
-  happy: [9, 10],
-  sad: [5, 13],
-  embarrassed: [6, 16],
-  angry: [7, 12],
-  surprised: [4, 11],
-  serious: [8, 18],
-  teasing: [15],
-  confused: [14],
-  sleepy: [2, 17],
-  talking: [3],
-  thinking: [2, 17],
+export const EMOTION_SPRITES_DEFAULT: Record<Emotion, number> = {
+  neutral: 0,
+  happy: 9,
+  sad: 5,
+  embarrassed: 6,
+  angry: 12,
+  surprised: 4,
+  serious: 8,
+  teasing: 15,
+  confused: 14,
+  sleepy: 17,
+  talking: 3,
+  thinking: 2,
 };
 
-export const EMOTION_SPRITES_SWIMSUIT: Record<Emotion, number[]> = {
-  neutral: [1, 6],
-  happy: [0, 2, 3, 9, 21],
-  sad: [5, 13],
-  embarrassed: [4, 15],
-  angry: [12, 18],
-  surprised: [4, 7, 8],
-  serious: [5, 10],
-  teasing: [0, 8],
-  confused: [11, 14],
-  sleepy: [2, 12, 20, 99],
-  talking: [0, 7, 8, 17, 18],
-  thinking: [20, 99, 2],
+export const EMOTION_SPRITES_SWIMSUIT: Record<Emotion, number> = {
+  neutral: 1,
+  happy: 3,
+  sad: 5,
+  embarrassed: 15,
+  angry: 12,
+  surprised: 4,
+  serious: 10,
+  teasing: 0,
+  confused: 11,
+  sleepy: 20,
+  talking: 17,
+  thinking: 20,
 };
 
 export const BACKGROUND_MAP: Record<string, string> = {
@@ -110,8 +110,7 @@ export const BACKGROUND_MAP: Record<string, string> = {
 
 export function getSpriteIndex(costume: CostumeType, emotion: Emotion): number {
   const map = costume === "swimsuit" ? EMOTION_SPRITES_SWIMSUIT : EMOTION_SPRITES_DEFAULT;
-  const indices = map[emotion] ?? map.neutral;
-  return indices[Math.floor(Math.random() * indices.length)];
+  return map[emotion] ?? (costume === "swimsuit" ? 1 : 0);
 }
 
 export function getSpritePath(costume: CostumeType, index: number): string {
