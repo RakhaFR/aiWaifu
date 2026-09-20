@@ -18,8 +18,6 @@ export default function ChatArea({ messages, loading, spriteTransform }: Props) 
   const spriteY = spriteTransform.y;
   const spriteScale = spriteTransform.scale;
 
-  // Head/face of Hoshino is slightly left of sprite center, at top 25%
-  // Bubble sits just to the right of her cheek
   const bubbleOffsetX = spriteX + 110 * spriteScale;
   const bubbleOffsetY = spriteY - 180 * spriteScale;
 
@@ -39,21 +37,30 @@ export default function ChatArea({ messages, loading, spriteTransform }: Props) 
             <div
               className={`relative bg-white text-slate-900 shadow-2xl border border-slate-200/90 transition-all ${
                 isThinkingState
-                  ? "rounded-full px-5 py-2.5 inline-flex items-center justify-center min-w-[64px]"
+                  ? "rounded-full px-5 py-2.5 inline-flex items-center justify-center min-w-[68px]"
                   : "rounded-[1.75rem] px-5 py-3.5 md:px-6 md:py-4 max-w-xs sm:max-w-sm md:max-w-md"
               }`}
             >
-              {/* Tail pointing towards Hoshino's cheek */}
-              <div
-                className="absolute -left-3 top-5 w-0 h-0 
-                border-t-[8px] border-t-transparent 
-                border-r-[14px] border-r-white 
-                border-b-[8px] border-b-transparent 
-                drop-shadow-[-2px_1px_1px_rgba(0,0,0,0.06)]"
-              />
+              {/* Tail / Thought Dots */}
+              {isThinkingState ? (
+                <>
+                  {/* Manga thought bubble dots */}
+                  <div className="absolute -left-2.5 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-white border border-slate-200 shadow-sm" />
+                  <div className="absolute -left-5 top-[60%] -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white border border-slate-200 shadow-sm" />
+                </>
+              ) : (
+                /* Seamless speech tail */
+                <div
+                  className="absolute -left-2.5 top-5 w-0 h-0 
+                  border-t-[6px] border-t-transparent 
+                  border-r-[12px] border-r-white 
+                  border-b-[6px] border-b-transparent 
+                  drop-shadow-[-1px_1px_1px_rgba(0,0,0,0.05)]"
+                />
+              )}
 
               {isThinkingState ? (
-                <div className="flex items-center gap-1.5 text-slate-700 text-lg font-bold tracking-widest leading-none">
+                <div className="flex items-center gap-1 text-slate-600 text-base font-bold tracking-widest leading-none px-1">
                   <span className="animate-bounce">.</span>
                   <span className="animate-bounce [animation-delay:0.15s]">.</span>
                   <span className="animate-bounce [animation-delay:0.3s]">.</span>
