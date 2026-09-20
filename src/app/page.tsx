@@ -1,7 +1,7 @@
 "use client";
 
-import { useSyncExternalStore, useState } from "react";
-import SpriteDisplay from "@/components/SpriteDisplay";
+import { useSyncExternalStore, useState, useEffect } from "react";
+import SpriteDisplay, { DEFAULT_TRANSFORM, type SpriteTransform } from "@/components/SpriteDisplay";
 import ChatArea from "@/components/ChatArea";
 import InputBar from "@/components/InputBar";
 import Sidebar from "@/components/Sidebar";
@@ -33,11 +33,23 @@ export default function Home() {
   const [apiKey, setApiKey] = useLocalStorage("gemini_api_key", "");
   const [isEditMode, setIsEditMode] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const [spriteTransform, setSpriteTransform] = useState({
-    x: -180,
-    y: 60,
-    scale: 1.35,
-  });
+  const [spriteTransform, setSpriteTransform] = useState<SpriteTransform>(DEFAULT_TRANSFORM);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("hoshino_sprite_transform");
+      if (saved) {
+        setSpriteTransform(JSON.parse(saved));
+      }
+    } catch {
+      // fallback
+    }
+  }, []);
+
+  const handleTransformChange = (t: SpriteTransform) => {
+    setSpriteTransform(t);
+    localStorage.setItem("hoshino_sprite_transform", JSON.stringify(t));
+  };
 
   const {
     messages,
@@ -103,7 +115,8 @@ export default function Home() {
         costume={currentCostume}
         isEditMode={isEditMode}
         isThinking={loading}
-        onPositionChange={setSpriteTransform}
+        transform={spriteTransform}
+        onTransformChange={handleTransformChange}
       />
 
       {/* Dialogue Layer */}
@@ -142,7 +155,7 @@ export default function Home() {
                   }`}
                 >
                   <div className="text-[11px] font-bold text-cyan-400 mb-1 capitalize">
-                    {m.role === "user" ? "Sensei" : "Hoshino"}
+                    {m.role === "user" ? "Sensei" : "Takanashi Hoshino"}
                   </div>
                   <p className="whitespace-pre-wrap">{m.text}</p>
                 </div>

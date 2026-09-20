@@ -1,11 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import type { Emotion, CostumeType } from "@/lib/emotionMap";
 import { getSpriteIndex, getSpritePath } from "@/lib/emotionMap";
 
-interface SpriteTransform {
+export interface SpriteTransform {
   x: number;
   y: number;
   scale: number;
@@ -16,11 +16,12 @@ interface Props {
   costume: CostumeType;
   isEditMode: boolean;
   isThinking: boolean;
-  onPositionChange?: (pos: SpriteTransform) => void;
+  transform: SpriteTransform;
+  onTransformChange: (t: SpriteTransform) => void;
 }
 
-const DEFAULT_TRANSFORM: SpriteTransform = {
-  x: -180,
+export const DEFAULT_TRANSFORM: SpriteTransform = {
+  x: -240,
   y: 60,
   scale: 1.35,
 };
@@ -30,33 +31,13 @@ export default function SpriteDisplay({
   costume,
   isEditMode,
   isThinking,
-  onPositionChange,
+  transform,
+  onTransformChange,
 }: Props) {
-  const [transform, setTransform] = useState<SpriteTransform>(DEFAULT_TRANSFORM);
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0 });
   const transformStart = useRef({ x: 0, y: 0 });
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("hoshino_sprite_transform");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setTransform(parsed);
-        onPositionChange?.(parsed);
-      } else {
-        onPositionChange?.(DEFAULT_TRANSFORM);
-      }
-    } catch {
-      onPositionChange?.(DEFAULT_TRANSFORM);
-    }
-  }, [onPositionChange]);
-
-  const saveTransform = (t: SpriteTransform) => {
-    setTransform(t);
-    onPositionChange?.(t);
-    localStorage.setItem("hoshino_sprite_transform", JSON.stringify(t));
-  };
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const effectiveEmotion: Emotion = isThinking ? "thinking" : emotion;
   const spriteIdx = useMemo(
@@ -78,23 +59,16 @@ export default function SpriteDisplay({
       if (!isDragging.current || !isEditMode) return;
       const dx = e.clientX - dragStart.current.x;
       const dy = e.clientY - dragStart.current.y;
-      const nextTransform = {
+      onTransformChange({
         ...transform,
         x: Math.round(transformStart.current.x + dx),
         y: Math.round(transformStart.current.y + dy),
-      };
-      setTransform(nextTransform);
-      onPositionChange?.(nextTransform);
+      });
     };
 
     const handleMouseUp = () => {
       if (isDragging.current) {
         isDragging.current = false;
-        setTransform((curr) => {
-          localStorage.setItem("hoshino_sprite_transform", JSON.stringify(curr));
-          onPositionChange?.(curr);
-          return curr;
-        });
       }
     };
 
@@ -104,10 +78,9 @@ export default function SpriteDisplay({
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isEditMode, transform, onPositionChange]);
+  }, [isEditMode, transform, onTransformChange]);
 
-  // Non-passive wheel event to reliably zoom
-  const containerRef = useRef<HTMLDivElement>(null);
+  // Non-passive wheel listener for smooth scaling
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -116,22 +89,17 @@ export default function SpriteDisplay({
       if (!isEditMode) return;
       e.preventDefault();
       const delta = e.deltaY > 0 ? -0.06 : 0.06;
-      setTransform((prev) => {
-        const nextScale = Math.min(Math.max(0.5, +(prev.scale + delta).toFixed(2)), 3.5);
-        const updated = { ...prev, scale: nextScale };
-        localStorage.setItem("hoshino_sprite_transform", JSON.stringify(updated));
-        onPositionChange?.(updated);
-        return updated;
-      });
+      const nextScale = Math.min(Math.max(0.5, +(transform.scale + delta).toFixed(2)), 3.5);
+      onTransformChange({ ...transform, scale: nextScale });
     };
 
     el.addEventListener("wheel", handleWheelNative, { passive: false });
     return () => el.removeEventListener("wheel", handleWheelNative);
-  }, [isEditMode, onPositionChange]);
+  }, [isEditMode, transform, onTransformChange]);
 
   const handleReset = (e: React.MouseEvent) => {
     e.stopPropagation();
-    saveTransform(DEFAULT_TRANSFORM);
+    onTransformChange(DEFAULT_TRANSFORM);
   };
 
   return (
