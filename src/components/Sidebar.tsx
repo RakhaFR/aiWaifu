@@ -90,6 +90,8 @@ export default function Sidebar({
 }: Props) {
   const [hovered, setHovered] = useState(false);
   const [panel, setPanel] = useState<Panel>(null);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [showFishAudioApiKey, setShowFishAudioApiKey] = useState(false);
 
   const togglePanel = (p: Panel) => setPanel((prev) => (prev === p ? null : p));
 
@@ -222,26 +224,44 @@ export default function Sidebar({
                 <label className="text-white/70 text-xs block mb-1 font-medium">
                   Google Gemini API Key
                 </label>
-                <input
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => onApiKeyChange(e.target.value)}
-                  placeholder="AIzaSy..."
-                  className="w-full bg-white/[0.05] border border-cyan-500/30 rounded-xl px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50"
-                />
+                <div className="relative">
+                  <input
+                    type={showApiKey ? "text" : "password"}
+                    value={apiKey}
+                    onChange={(e) => onApiKeyChange(e.target.value)}
+                    placeholder="AIzaSy..."
+                    className="w-full bg-white/[0.05] border border-cyan-500/30 rounded-xl px-3 py-2 pr-16 text-sm text-white placeholder-white/20 outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowApiKey((shown) => !shown)}
+                    className="absolute inset-y-0 right-0 px-3 text-[10px] text-cyan-300 hover:text-cyan-100"
+                  >
+                    {showApiKey ? "Hide" : "Show"}
+                  </button>
+                </div>
               </div>
 
               <div>
                 <label className="text-white/70 text-xs block mb-1 font-medium">
                   Fish Audio API Key
                 </label>
-                <input
-                  type="password"
-                  value={fishAudioApiKey}
-                  onChange={(e) => onFishAudioApiKeyChange(e.target.value)}
-                  placeholder="sk-fish-..."
-                  className="w-full bg-white/[0.05] border border-cyan-500/30 rounded-xl px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50"
-                />
+                <div className="relative">
+                  <input
+                    type={showFishAudioApiKey ? "text" : "password"}
+                    value={fishAudioApiKey}
+                    onChange={(e) => onFishAudioApiKeyChange(e.target.value)}
+                    placeholder="sk-fish-..."
+                    className="w-full bg-white/[0.05] border border-cyan-500/30 rounded-xl px-3 py-2 pr-16 text-sm text-white placeholder-white/20 outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowFishAudioApiKey((shown) => !shown)}
+                    className="absolute inset-y-0 right-0 px-3 text-[10px] text-cyan-300 hover:text-cyan-100"
+                  >
+                    {showFishAudioApiKey ? "Hide" : "Show"}
+                  </button>
+                </div>
               </div>
 
               <div>
