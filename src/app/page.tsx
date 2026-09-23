@@ -6,6 +6,7 @@ import ChatArea from "@/components/ChatArea";
 import InputBar from "@/components/InputBar";
 import Sidebar from "@/components/Sidebar";
 import { useChat } from "@/hooks/useChat";
+import { useVoice } from "@/hooks/useVoice";
 import { BACKGROUND_MAP } from "@/lib/emotionMap";
 
 function useLocalStorage(key: string, fallback: string) {
@@ -64,12 +65,16 @@ export default function Home() {
     clearMessages,
   } = useChat();
 
+  const voice = useVoice();
+
   const handleSend = (text: string) => {
     if (!apiKey) {
       alert("Masukkan Google Gemini API key di menu Settings (hover sisi kiri layar).");
       return;
     }
-    sendMessage(text, apiKey, selectedModel);
+    void sendMessage(text, apiKey, selectedModel, (message, showText) =>
+      voice.speak(message.text, apiKey, showText)
+    );
   };
 
   const bgImage = BACKGROUND_MAP[currentBackground] || BACKGROUND_MAP.committee_room;
@@ -110,6 +115,16 @@ export default function Home() {
         onBgThemeChange={setCurrentBackground}
         selectedModel={selectedModel}
         onModelChange={setSelectedModel}
+        voiceEnabled={voice.voiceEnabled}
+        onVoiceEnabledChange={voice.setVoiceEnabled}
+        fishAudioApiKey={voice.fishAudioApiKey}
+        onFishAudioApiKeyChange={voice.setFishAudioApiKey}
+        fishAudioReferenceId={voice.fishAudioReferenceId}
+        onFishAudioReferenceIdChange={voice.setFishAudioReferenceId}
+        voiceLanguage={voice.voiceLanguage}
+        onVoiceLanguageChange={voice.setVoiceLanguage}
+        isVoicePlaying={voice.isPlaying}
+        isVoiceFetching={voice.isFetching}
       />
 
       {/* 2D Sprite Layer */}
@@ -128,6 +143,9 @@ export default function Home() {
           messages={messages}
           loading={loading}
           spriteTransform={spriteTransform}
+          isVoicePlaying={voice.isPlaying}
+          isVoiceFetching={voice.isFetching}
+          onSkipAudio={voice.skipAudio}
         />
         <InputBar onSend={handleSend} disabled={loading} />
       </div>

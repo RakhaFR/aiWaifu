@@ -17,6 +17,16 @@ interface Props {
   onBgThemeChange: (bg: string) => void;
   selectedModel: string;
   onModelChange: (model: string) => void;
+  voiceEnabled: boolean;
+  onVoiceEnabledChange: (v: boolean) => void;
+  fishAudioApiKey: string;
+  onFishAudioApiKeyChange: (key: string) => void;
+  fishAudioReferenceId: string;
+  onFishAudioReferenceIdChange: (id: string) => void;
+  voiceLanguage: "ja" | "id" | "en";
+  onVoiceLanguageChange: (language: "ja" | "id" | "en") => void;
+  isVoicePlaying: boolean;
+  isVoiceFetching: boolean;
 }
 
 const ICONS = {
@@ -41,6 +51,11 @@ const ICONS = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
     </svg>
   ),
+  voice: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} className="w-5 h-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
+    </svg>
+  ),
   trash: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} className="w-5 h-5">
       <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
@@ -48,7 +63,7 @@ const ICONS = {
   ),
 };
 
-type Panel = "settings" | "costume" | "scenery" | null;
+type Panel = "settings" | "costume" | "scenery" | "voice" | null;
 
 export default function Sidebar({
   apiKey,
@@ -62,6 +77,16 @@ export default function Sidebar({
   onBgThemeChange,
   selectedModel,
   onModelChange,
+  voiceEnabled,
+  onVoiceEnabledChange,
+  fishAudioApiKey,
+  onFishAudioApiKeyChange,
+  fishAudioReferenceId,
+  onFishAudioReferenceIdChange,
+  voiceLanguage,
+  onVoiceLanguageChange,
+  isVoicePlaying,
+  isVoiceFetching,
 }: Props) {
   const [hovered, setHovered] = useState(false);
   const [panel, setPanel] = useState<Panel>(null);
@@ -121,6 +146,23 @@ export default function Sidebar({
           </button>
 
           <button
+            onClick={() => togglePanel("voice")}
+            className={`p-2.5 rounded-xl transition-all relative ${
+              panel === "voice"
+                ? "bg-white/20 text-cyan-300"
+                : voiceEnabled
+                  ? "text-emerald-400 hover:text-cyan-300 hover:bg-white/10"
+                  : "text-white/70 hover:text-cyan-300 hover:bg-white/10"
+            }`}
+            title="Voice Settings (Fish Audio)"
+          >
+            {ICONS.voice}
+            {(isVoicePlaying || isVoiceFetching) && (
+              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+            )}
+          </button>
+
+          <button
             onClick={() => togglePanel("settings")}
             className={`p-2.5 rounded-xl transition-all ${
               panel === "settings"
@@ -161,6 +203,7 @@ export default function Sidebar({
               {panel === "settings" && "API & Model Settings"}
               {panel === "costume" && "Hoshino Costumes"}
               {panel === "scenery" && "Scenery & Background"}
+              {panel === "voice" && "Voice Settings"}
             </h3>
             <button
               onClick={() => {
@@ -190,6 +233,47 @@ export default function Sidebar({
 
               <div>
                 <label className="text-white/70 text-xs block mb-1 font-medium">
+                  Fish Audio API Key
+                </label>
+                <input
+                  type="password"
+                  value={fishAudioApiKey}
+                  onChange={(e) => onFishAudioApiKeyChange(e.target.value)}
+                  placeholder="sk-fish-..."
+                  className="w-full bg-white/[0.05] border border-cyan-500/30 rounded-xl px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50"
+                />
+              </div>
+
+              <div>
+                <label className="text-white/70 text-xs block mb-1 font-medium">
+                  Voice Model ID / Reference ID
+                </label>
+                <input
+                  type="text"
+                  value={fishAudioReferenceId}
+                  onChange={(e) => onFishAudioReferenceIdChange(e.target.value)}
+                  placeholder="b94e6f4628ae4ec898981cc171faf42d"
+                  className="w-full bg-white/[0.05] border border-cyan-500/30 rounded-xl px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50"
+                />
+              </div>
+
+              <div>
+                <label className="text-white/70 text-xs block mb-1 font-medium">
+                  Bahasa Suara (TTS Language)
+                </label>
+                <select
+                  value={voiceLanguage}
+                  onChange={(e) => onVoiceLanguageChange(e.target.value as "ja" | "id" | "en")}
+                  className="w-full bg-[#121b2f] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400"
+                >
+                  <option value="ja">Japanese (Recommended for Anime Voice)</option>
+                  <option value="id">Indonesian</option>
+                  <option value="en">English</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-white/70 text-xs block mb-1 font-medium">
                   Model AI (Dengan Auto-Fallback)
                 </label>
                 <select
@@ -204,12 +288,12 @@ export default function Sidebar({
                   ))}
                 </select>
                 <p className="text-[10px] text-cyan-300/70 mt-1">
-                  ⚡ Jika model yang dipilih mengalami lonjakan trafik (503), sistem otomatis beralih ke model alternatif seketika.
+                  Jika model yang dipilih mengalami lonjakan trafik (503), sistem otomatis beralih ke model alternatif seketika.
                 </p>
               </div>
 
               <p className="text-white/40 text-[11px] leading-relaxed pt-1 border-t border-white/10">
-                Dapatkan API Key gratis di{" "}
+                Dapatkan Gemini API Key di{" "}
                 <a
                   href="https://aistudio.google.com/apikey"
                   target="_blank"
@@ -218,6 +302,16 @@ export default function Sidebar({
                 >
                   aistudio.google.com
                 </a>
+                {" · "}
+                Fish Audio API Key di{" "}
+                <a
+                  href="https://fish.audio/app/developers/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-cyan-400 underline hover:text-cyan-300"
+                >
+                  fish.audio
+                </a>
               </p>
             </div>
           )}
@@ -225,7 +319,7 @@ export default function Sidebar({
           {panel === "costume" && (
             <div className="space-y-2">
               <p className="text-[11px] text-cyan-300/80 mb-2">
-                ✨ Otomatis berganti sesuai alur obrolan (pantai, olahraga, sekolah), atau pilih manual di bawah:
+                Otomatis berganti sesuai alur obrolan (pantai, olahraga, sekolah), atau pilih manual di bawah:
               </p>
               {[
                 { id: "default", name: "Uniform (Abydos High)", desc: "Seragam sekolah klasik" },
@@ -251,7 +345,7 @@ export default function Sidebar({
           {panel === "scenery" && (
             <div className="space-y-3">
               <p className="text-[11px] text-cyan-300/80 mb-2">
-                ✨ Scenery otomatis berganti saat kamu ajak Hoshino ke lokasi baru via chat!
+                Scenery otomatis berganti saat kamu ajak Hoshino ke lokasi baru via chat!
               </p>
               <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
                 {Object.keys(BACKGROUND_MAP).map((bgKey) => (
@@ -274,6 +368,39 @@ export default function Sidebar({
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+
+          {panel === "voice" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="text-white/70 text-xs font-medium">
+                  Voice TTS (Fish Audio)
+                </label>
+                <button
+                  onClick={() => onVoiceEnabledChange(!voiceEnabled)}
+                  className={`relative w-10 h-5 rounded-full transition-colors ${
+                    voiceEnabled ? "bg-emerald-500" : "bg-white/20"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-md transition-transform ${
+                      voiceEnabled ? "translate-x-5" : ""
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {(isVoicePlaying || isVoiceFetching) && (
+                <div className="flex items-center gap-2 text-xs text-emerald-300/90 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  {isVoiceFetching ? "Generating voice..." : "Playing..."}
+                </div>
+              )}
+
+              <p className="text-white/40 text-[11px] leading-relaxed pt-1 border-t border-white/10">
+                API key tersimpan di browser ini dan dikirim melalui server aplikasi untuk menghindari CORS.
+              </p>
             </div>
           )}
         </div>

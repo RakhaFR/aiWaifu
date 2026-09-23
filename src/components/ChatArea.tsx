@@ -6,9 +6,12 @@ interface Props {
   messages: ChatMessage[];
   loading: boolean;
   spriteTransform: { x: number; y: number; scale: number };
+  isVoicePlaying: boolean;
+  isVoiceFetching: boolean;
+  onSkipAudio: () => void;
 }
 
-export default function ChatArea({ messages, loading, spriteTransform }: Props) {
+export default function ChatArea({ messages, loading, spriteTransform, isVoicePlaying, isVoiceFetching, onSkipAudio }: Props) {
   const latestMessage = messages[messages.length - 1];
   const latestHoshinoMsg = [...messages].reverse().find((m) => m.role === "hoshino");
   const latestUserMsg = [...messages].reverse().find((m) => m.role === "user");
@@ -37,9 +40,12 @@ export default function ChatArea({ messages, loading, spriteTransform }: Props) 
             <div
               className={`relative bg-white text-slate-900 shadow-2xl border border-slate-200/90 transition-all ${
                 isThinkingState
-                  ? "rounded-full px-5 py-2.5 inline-flex items-center justify-center min-w-[68px]"
+                  ? isVoiceFetching
+                    ? "rounded-2xl px-5 py-2.5 inline-flex min-w-[150px] cursor-pointer"
+                    : "rounded-full px-5 py-2.5 inline-flex min-w-[68px]"
                   : "rounded-[1.75rem] px-5 py-3.5 md:px-6 md:py-4 max-w-xs sm:max-w-sm md:max-w-md"
               }`}
+              onClick={isThinkingState && isVoiceFetching ? onSkipAudio : undefined}
             >
               {/* Tail / Thought Dots */}
               {isThinkingState ? (
@@ -60,10 +66,17 @@ export default function ChatArea({ messages, loading, spriteTransform }: Props) 
               )}
 
               {isThinkingState ? (
-                <div className="flex items-center gap-1 text-slate-600 text-base font-bold tracking-widest leading-none px-1">
-                  <span className="animate-bounce">.</span>
-                  <span className="animate-bounce [animation-delay:0.15s]">.</span>
-                  <span className="animate-bounce [animation-delay:0.3s]">.</span>
+                <div className="flex flex-col items-center gap-1.5 text-slate-600">
+                  <div className="flex items-center gap-1 text-base font-bold tracking-widest leading-none px-1">
+                    <span className="animate-bounce">.</span>
+                    <span className="animate-bounce [animation-delay:0.15s]">.</span>
+                    <span className="animate-bounce [animation-delay:0.3s]">.</span>
+                  </div>
+                  {isVoiceFetching && (
+                    <span className="text-[10px] italic text-slate-500/50">
+                      Klik untuk lewati audio
+                    </span>
+                  )}
                 </div>
               ) : (
                 <div>
@@ -73,8 +86,15 @@ export default function ChatArea({ messages, loading, spriteTransform }: Props) 
                       Takanashi Hoshino
                     </span>
                     <span className="text-[10px] text-slate-400 font-medium">
-                      (小鳥遊ホシノ)
+                      ({"\u5C0F\u9CE5\u904A\u30DB\u30B7\u30CE"})
                     </span>
+                    {(isVoicePlaying || isVoiceFetching) && (
+                      <span className="flex items-center gap-[3px] ml-1">
+                        <span className="w-[3px] h-3 bg-cyan-500 rounded-full animate-[voiceBar1_0.6s_ease-in-out_infinite]" />
+                        <span className="w-[3px] h-4 bg-cyan-400 rounded-full animate-[voiceBar2_0.6s_ease-in-out_infinite_0.15s]" />
+                        <span className="w-[3px] h-2.5 bg-cyan-500 rounded-full animate-[voiceBar3_0.6s_ease-in-out_infinite_0.3s]" />
+                      </span>
+                    )}
                   </div>
 
                   <p className="text-sm md:text-[15px] leading-relaxed font-normal text-slate-900 break-words whitespace-pre-wrap">

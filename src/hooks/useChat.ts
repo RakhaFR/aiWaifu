@@ -55,7 +55,12 @@ export function useChat() {
   };
 
   const sendMessage = useCallback(
-    async (text: string, apiKey: string, model?: string) => {
+    async (
+      text: string,
+      apiKey: string,
+      model?: string,
+      onHoshinoMessage?: (message: ChatMessage, showText: () => void) => Promise<void>
+    ) => {
       if (!text.trim() || loading) return;
 
       const userMsg: ChatMessage = { role: "user", text };
@@ -95,18 +100,20 @@ export function useChat() {
             costume: data.costume,
             background: data.background,
           };
-          const nextMessages = [...updatedMessagesWithUser, hoshinoMsg];
-          setMessages(nextMessages);
-
           const nextEmotion = data.emotion || currentEmotion;
           const nextCostume = data.costume || currentCostume;
           const nextBackground = data.background || currentBackground;
+          const showText = () => {
+            const nextMessages = [...updatedMessagesWithUser, hoshinoMsg];
+            setMessages(nextMessages);
+            if (data.emotion) setCurrentEmotion(data.emotion);
+            if (data.costume) setCurrentCostume(data.costume);
+            if (data.background) setCurrentBackground(data.background);
+            saveToStorage(nextMessages, nextEmotion, nextCostume, nextBackground);
+          };
 
-          if (data.emotion) setCurrentEmotion(data.emotion);
-          if (data.costume) setCurrentCostume(data.costume);
-          if (data.background) setCurrentBackground(data.background);
-
-          saveToStorage(nextMessages, nextEmotion, nextCostume, nextBackground);
+          if (onHoshinoMessage) await onHoshinoMessage(hoshinoMsg, showText);
+          else showText();
         }
       } catch {
         const errMsg: ChatMessage = {
