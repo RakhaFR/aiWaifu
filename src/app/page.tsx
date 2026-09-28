@@ -33,7 +33,9 @@ function useLocalStorage(key: string, fallback: string) {
 export default function Home() {
   const [apiKey, setApiKey] = useLocalStorage("gemini_api_key", "");
   const [selectedModel, setSelectedModel] = useLocalStorage("gemini_model", "gemini-3.6-flash");
+  const [uiTheme, setUiTheme] = useLocalStorage("hoshino_ui_theme", "dark");
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [spriteTransform, setSpriteTransform] = useState<SpriteTransform>(DEFAULT_TRANSFORM);
 
@@ -90,20 +92,52 @@ export default function Home() {
       {/* Subtle Vignette & Lighting */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30 pointer-events-none" />
 
-      {/* Top Header Log Button */}
-      <header className="relative z-30 w-full px-6 py-4 flex items-center justify-end pointer-events-none">
-        {messages.length > 0 && (
+      {/* Top Header Blue Archive Controls */}
+      <header className="relative z-30 w-full px-6 py-4 flex items-center justify-between pointer-events-none">
+        <div className="flex items-center gap-2">
+        </div>
+
+        <div className="flex items-center gap-2 pointer-events-auto">
+          {messages.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowHistory(true)}
+              className="slanted-button text-xs"
+            >
+              <span>Log ({messages.length})</span>
+            </button>
+          )}
+
           <button
-            onClick={() => setShowHistory(true)}
-            className="pointer-events-auto text-xs bg-slate-900/80 hover:bg-slate-800 text-white/90 px-3.5 py-1.5 rounded-xl backdrop-blur-md border border-white/10 shadow-lg transition-all"
+            type="button"
+            onClick={() => voice.setVoiceEnabled(!voice.voiceEnabled)}
+            className={`slanted-button slanted-button--auto ${
+              voice.voiceEnabled ? "slanted-button--active" : ""
+            }`}
+            title="Toggle Voice Autoplay"
           >
-            Log ({messages.length})
+            <span>Auto</span>
           </button>
-        )}
+
+          <button
+            type="button"
+            onClick={() => setIsMenuOpen((prev) => !prev)}
+            className={`slanted-button slanted-button--menu ${
+              isMenuOpen ? "slanted-button--active" : ""
+            }`}
+            title="Toggle Menu & Settings"
+          >
+            <span>Menu</span>
+          </button>
+        </div>
       </header>
 
       {/* Left Hover Reveal Sidebar */}
       <Sidebar
+        isOpen={isMenuOpen}
+        onToggleOpen={() => setIsMenuOpen((prev) => !prev)}
+        theme={uiTheme as "dark" | "light"}
+        onThemeChange={setUiTheme}
         apiKey={apiKey}
         onApiKeyChange={setApiKey}
         costume={currentCostume}
@@ -146,21 +180,31 @@ export default function Home() {
           isVoicePlaying={voice.isPlaying}
           isVoiceFetching={voice.isFetching}
           onSkipAudio={voice.skipAudio}
+          theme={uiTheme as "dark" | "light"}
         />
-        <InputBar onSend={handleSend} disabled={loading} />
+        <InputBar
+          onSend={handleSend}
+          disabled={loading}
+          theme={uiTheme as "dark" | "light"}
+        />
       </div>
 
       {/* Full Chat Log Modal */}
       {showHistory && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="w-full max-w-xl max-h-[80vh] bg-[#0c1322] border border-cyan-500/20 rounded-2xl flex flex-col shadow-2xl overflow-hidden">
-            <div className="p-4 border-b border-white/10 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-cyan-200 tracking-wider">
-                Chat History Log
-              </h3>
+          <div className="w-full max-w-xl max-h-[80vh] ba-panel rounded-2xl flex flex-col shadow-2xl overflow-hidden text-white">
+            <div className="p-4 border-b border-cyan-500/20 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-extrabold text-cyan-400 tracking-widest uppercase">
+                  RECORD / TRANSCRIPT
+                </span>
+                <h3 className="text-base font-extrabold text-cyan-100 tracking-wider">
+                  Chat History Log
+                </h3>
+              </div>
               <button
                 onClick={() => setShowHistory(false)}
-                className="text-white/40 hover:text-white text-lg"
+                className="text-white/40 hover:text-white text-xl px-2"
               >
                 &times;
               </button>

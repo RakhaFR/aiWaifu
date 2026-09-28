@@ -6,6 +6,10 @@ import { BACKGROUND_MAP } from "@/lib/emotionMap";
 import { AVAILABLE_MODELS } from "@/lib/gemini";
 
 interface Props {
+  isOpen?: boolean;
+  onToggleOpen?: () => void;
+  theme?: "dark" | "light";
+  onThemeChange?: (theme: "dark" | "light") => void;
   apiKey: string;
   onApiKeyChange: (key: string) => void;
   costume: CostumeType;
@@ -66,6 +70,9 @@ const ICONS = {
 type Panel = "settings" | "costume" | "scenery" | "voice" | null;
 
 export default function Sidebar({
+  isOpen = false,
+  theme = "dark",
+  onThemeChange,
   apiKey,
   onApiKeyChange,
   costume,
@@ -93,6 +100,9 @@ export default function Sidebar({
   const [showApiKey, setShowApiKey] = useState(false);
   const [showFishAudioApiKey, setShowFishAudioApiKey] = useState(false);
 
+  const isVisible = isOpen || hovered || isEditMode || panel !== null;
+  const isDark = theme === "dark";
+
   const togglePanel = (p: Panel) => setPanel((prev) => (prev === p ? null : p));
 
   return (
@@ -101,13 +111,13 @@ export default function Sidebar({
         className="fixed left-0 top-0 h-full w-14 z-50 group"
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => {
-          if (!panel) setHovered(false);
+          if (!panel && !isOpen) setHovered(false);
         }}
       >
         <div
           className={`h-full flex flex-col items-center py-6 gap-3 transition-all duration-300 ${
-            hovered || isEditMode
-              ? "opacity-100 bg-black/40 backdrop-blur-md border-r border-white/10"
+            isVisible
+              ? "opacity-100 bg-[#070e1a]/85 backdrop-blur-md border-r border-cyan-500/20"
               : "opacity-0"
           }`}
         >
@@ -127,7 +137,7 @@ export default function Sidebar({
             onClick={() => togglePanel("costume")}
             className={`p-2.5 rounded-xl transition-all ${
               panel === "costume"
-                ? "bg-white/20 text-cyan-300"
+                ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/40"
                 : "text-white/70 hover:text-cyan-300 hover:bg-white/10"
             }`}
             title="Costume (Interactive auto / Manual)"
@@ -139,7 +149,7 @@ export default function Sidebar({
             onClick={() => togglePanel("scenery")}
             className={`p-2.5 rounded-xl transition-all ${
               panel === "scenery"
-                ? "bg-white/20 text-cyan-300"
+                ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/40"
                 : "text-white/70 hover:text-cyan-300 hover:bg-white/10"
             }`}
             title="Scenery (Interactive auto / Manual)"
@@ -151,16 +161,16 @@ export default function Sidebar({
             onClick={() => togglePanel("voice")}
             className={`p-2.5 rounded-xl transition-all relative ${
               panel === "voice"
-                ? "bg-white/20 text-cyan-300"
+                ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/40"
                 : voiceEnabled
-                  ? "text-emerald-400 hover:text-cyan-300 hover:bg-white/10"
+                  ? "text-cyan-400 hover:text-cyan-300 hover:bg-white/10"
                   : "text-white/70 hover:text-cyan-300 hover:bg-white/10"
             }`}
             title="Voice Settings (Fish Audio)"
           >
             {ICONS.voice}
             {(isVoicePlaying || isVoiceFetching) && (
-              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
             )}
           </button>
 
@@ -168,7 +178,7 @@ export default function Sidebar({
             onClick={() => togglePanel("settings")}
             className={`p-2.5 rounded-xl transition-all ${
               panel === "settings"
-                ? "bg-white/20 text-cyan-300"
+                ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/40"
                 : "text-white/70 hover:text-cyan-300 hover:bg-white/10"
             }`}
             title="API Key & Model Settings"
@@ -190,7 +200,7 @@ export default function Sidebar({
 
       {panel && (
         <div
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]"
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]"
           onClick={() => {
             setPanel(null);
             setHovered(false);
@@ -199,29 +209,86 @@ export default function Sidebar({
       )}
 
       {panel && (
-        <div className="fixed left-16 top-6 z-50 w-84 bg-[#0d1424]/95 backdrop-blur-2xl border border-cyan-500/20 rounded-2xl p-5 shadow-2xl shadow-black/80 text-white animate-[fadeIn_0.2s_ease-out]">
-          <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
-            <h3 className="font-semibold text-sm tracking-wide text-cyan-200">
-              {panel === "settings" && "API & Model Settings"}
-              {panel === "costume" && "Hoshino Costumes"}
-              {panel === "scenery" && "Scenery & Background"}
-              {panel === "voice" && "Voice Settings"}
-            </h3>
+        <div
+          className={`fixed left-16 top-6 z-50 w-96 rounded-xl p-6 animate-[fadeIn_0.2s_ease-out] max-h-[90vh] overflow-y-auto ${
+            isDark ? "ba-panel text-white" : "ba-panel ba-panel--light text-[#153450]"
+          }`}
+        >
+          {/* Blue Archive Panel Header */}
+          <div className={`flex items-start justify-between pb-3 border-b mb-5 ${
+            isDark ? "border-cyan-500/20" : "border-[#38bdf8]/30"
+          }`}>
+            <div>
+              <span className={`text-[10px] font-extrabold uppercase tracking-widest ${
+                isDark ? "text-cyan-400" : "text-[#0284c7]"
+              }`}>
+                {panel === "settings" && "01 / Config & System"}
+                {panel === "costume" && "02 / Wardrobe Preset"}
+                {panel === "scenery" && "03 / Mission Scenery"}
+                {panel === "voice" && "04 / Voice Synthesizer"}
+              </span>
+              <h3 className={`font-extrabold text-lg tracking-tight flex items-center gap-2 mt-0.5 ${
+                isDark ? "text-cyan-100" : "text-[#102a3e]"
+              }`}>
+                {panel === "settings" && "System Settings"}
+                {panel === "costume" && "Costume Selection"}
+                {panel === "scenery" && "Background Stage"}
+                {panel === "voice" && "Fish Audio TTS"}
+              </h3>
+            </div>
             <button
               onClick={() => {
                 setPanel(null);
                 setHovered(false);
               }}
-              className="text-white/40 hover:text-white text-lg px-1.5 py-0.5"
+              className={`text-xl px-2 py-0.5 transition-colors ${
+                isDark ? "text-cyan-300/60 hover:text-cyan-200" : "text-[#477394] hover:text-[#102a3e]"
+              }`}
             >
               &times;
             </button>
           </div>
 
+          {/* 01 / SETTINGS PANEL */}
           {panel === "settings" && (
             <div className="space-y-4">
+              {/* Global UI Theme Switcher */}
               <div>
-                <label className="text-white/70 text-xs block mb-1 font-medium">
+                <label className={`text-xs block mb-1.5 font-bold uppercase tracking-wider ${
+                  isDark ? "text-cyan-300/90" : "text-[#1a4464]"
+                }`}>
+                  UI Theme Mode
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onThemeChange?.("dark")}
+                    className={`p-2 rounded-lg text-xs font-bold border transition-all ${
+                      isDark
+                        ? "border-cyan-400 bg-cyan-500/20 text-white shadow-md shadow-cyan-500/20"
+                        : "border-slate-300 bg-white/70 text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    Dark Obsidian
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onThemeChange?.("light")}
+                    className={`p-2 rounded-lg text-xs font-bold border transition-all ${
+                      !isDark
+                        ? "border-[#0284c7] bg-[#e0f2fe] text-[#034169] shadow-md shadow-sky-500/20"
+                        : "border-cyan-900/30 bg-black/20 text-white/60 hover:text-white"
+                    }`}
+                  >
+                    Light Visual Novel
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className={`text-xs block mb-1 font-semibold ${
+                  isDark ? "text-white/80" : "text-[#1a4464]"
+                }`}>
                   Google Gemini API Key
                 </label>
                 <div className="relative">
@@ -230,12 +297,18 @@ export default function Sidebar({
                     value={apiKey}
                     onChange={(e) => onApiKeyChange(e.target.value)}
                     placeholder="AIzaSy..."
-                    className="w-full bg-white/[0.05] border border-cyan-500/30 rounded-xl px-3 py-2 pr-16 text-sm text-white placeholder-white/20 outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50"
+                    className={`w-full rounded-xl px-3 py-2 pr-16 text-sm outline-none transition-all ${
+                      isDark
+                        ? "bg-white/[0.06] border border-cyan-500/30 text-white placeholder-white/20 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50"
+                        : "bg-white border border-[#38bdf8]/40 text-[#102a3e] placeholder-slate-400 focus:border-[#0284c7] focus:ring-1 focus:ring-sky-400/50 shadow-sm"
+                    }`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowApiKey((shown) => !shown)}
-                    className="absolute inset-y-0 right-0 px-3 text-[10px] text-cyan-300 hover:text-cyan-100"
+                    className={`absolute inset-y-0 right-0 px-3 text-[10px] font-bold ${
+                      isDark ? "text-cyan-300 hover:text-cyan-100" : "text-[#0284c7] hover:text-[#0369a1]"
+                    }`}
                   >
                     {showApiKey ? "Hide" : "Show"}
                   </button>
@@ -243,7 +316,9 @@ export default function Sidebar({
               </div>
 
               <div>
-                <label className="text-white/70 text-xs block mb-1 font-medium">
+                <label className={`text-xs block mb-1 font-semibold ${
+                  isDark ? "text-white/80" : "text-[#1a4464]"
+                }`}>
                   Fish Audio API Key
                 </label>
                 <div className="relative">
@@ -252,12 +327,18 @@ export default function Sidebar({
                     value={fishAudioApiKey}
                     onChange={(e) => onFishAudioApiKeyChange(e.target.value)}
                     placeholder="sk-fish-..."
-                    className="w-full bg-white/[0.05] border border-cyan-500/30 rounded-xl px-3 py-2 pr-16 text-sm text-white placeholder-white/20 outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50"
+                    className={`w-full rounded-xl px-3 py-2 pr-16 text-sm outline-none transition-all ${
+                      isDark
+                        ? "bg-white/[0.06] border border-cyan-500/30 text-white placeholder-white/20 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50"
+                        : "bg-white border border-[#38bdf8]/40 text-[#102a3e] placeholder-slate-400 focus:border-[#0284c7] focus:ring-1 focus:ring-sky-400/50 shadow-sm"
+                    }`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowFishAudioApiKey((shown) => !shown)}
-                    className="absolute inset-y-0 right-0 px-3 text-[10px] text-cyan-300 hover:text-cyan-100"
+                    className={`absolute inset-y-0 right-0 px-3 text-[10px] font-bold ${
+                      isDark ? "text-cyan-300 hover:text-cyan-100" : "text-[#0284c7] hover:text-[#0369a1]"
+                    }`}
                   >
                     {showFishAudioApiKey ? "Hide" : "Show"}
                   </button>
@@ -265,7 +346,9 @@ export default function Sidebar({
               </div>
 
               <div>
-                <label className="text-white/70 text-xs block mb-1 font-medium">
+                <label className={`text-xs block mb-1 font-semibold ${
+                  isDark ? "text-white/80" : "text-[#1a4464]"
+                }`}>
                   Voice Model ID / Reference ID
                 </label>
                 <input
@@ -273,33 +356,49 @@ export default function Sidebar({
                   value={fishAudioReferenceId}
                   onChange={(e) => onFishAudioReferenceIdChange(e.target.value)}
                   placeholder="b94e6f4628ae4ec898981cc171faf42d"
-                  className="w-full bg-white/[0.05] border border-cyan-500/30 rounded-xl px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50"
+                  className={`w-full rounded-xl px-3 py-2 text-sm outline-none transition-all ${
+                    isDark
+                      ? "bg-white/[0.06] border border-cyan-500/30 text-white placeholder-white/20 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50"
+                      : "bg-white border border-[#38bdf8]/40 text-[#102a3e] placeholder-slate-400 focus:border-[#0284c7] focus:ring-1 focus:ring-sky-400/50 shadow-sm"
+                  }`}
                 />
               </div>
 
               <div>
-                <label className="text-white/70 text-xs block mb-1 font-medium">
+                <label className={`text-xs block mb-1 font-semibold ${
+                  isDark ? "text-white/80" : "text-[#1a4464]"
+                }`}>
                   Bahasa Suara (TTS Language)
                 </label>
                 <select
                   value={voiceLanguage}
                   onChange={(e) => onVoiceLanguageChange(e.target.value as "ja" | "id" | "en")}
-                  className="w-full bg-[#121b2f] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400"
+                  className={`w-full rounded-xl px-3 py-2 text-xs outline-none transition-all ${
+                    isDark
+                      ? "bg-[#0d1624] border border-cyan-500/30 text-white focus:border-cyan-400"
+                      : "bg-white border border-[#38bdf8]/40 text-[#102a3e] focus:border-[#0284c7] shadow-sm"
+                  }`}
                 >
-                  <option value="ja">Japanese (Recommended for Anime Voice)</option>
+                  <option value="ja">Japanese (Recommended Anime Voice)</option>
                   <option value="id">Indonesian</option>
                   <option value="en">English</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-white/70 text-xs block mb-1 font-medium">
+                <label className={`text-xs block mb-1 font-semibold ${
+                  isDark ? "text-white/80" : "text-[#1a4464]"
+                }`}>
                   Model AI (Dengan Auto-Fallback)
                 </label>
                 <select
                   value={selectedModel}
                   onChange={(e) => onModelChange(e.target.value)}
-                  className="w-full bg-[#121b2f] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400"
+                  className={`w-full rounded-xl px-3 py-2 text-xs outline-none transition-all ${
+                    isDark
+                      ? "bg-[#0d1624] border border-cyan-500/30 text-white focus:border-cyan-400"
+                      : "bg-white border border-[#38bdf8]/40 text-[#102a3e] focus:border-[#0284c7] shadow-sm"
+                  }`}
                 >
                   {AVAILABLE_MODELS.map((m) => (
                     <option key={m.id} value={m.id}>
@@ -307,119 +406,152 @@ export default function Sidebar({
                     </option>
                   ))}
                 </select>
-                <p className="text-[10px] text-cyan-300/70 mt-1">
-                  Jika model yang dipilih mengalami lonjakan trafik (503), sistem otomatis beralih ke model alternatif seketika.
-                </p>
               </div>
 
-              <p className="text-white/40 text-[11px] leading-relaxed pt-1 border-t border-white/10">
-                Dapatkan Gemini API Key di{" "}
+              <div className={`pt-2 border-t text-[11px] leading-relaxed ${
+                isDark ? "border-cyan-500/20 text-white/50" : "border-[#38bdf8]/30 text-[#477394]"
+              }`}>
+                <span>Dapatkan API Key: </span>
                 <a
                   href="https://aistudio.google.com/apikey"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-cyan-400 underline hover:text-cyan-300"
+                  className="text-cyan-500 font-bold underline hover:text-cyan-400"
                 >
-                  aistudio.google.com
+                  Gemini
                 </a>
                 {" · "}
-                Fish Audio API Key di{" "}
                 <a
                   href="https://fish.audio/app/developers/"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-cyan-400 underline hover:text-cyan-300"
+                  className="text-cyan-500 font-bold underline hover:text-cyan-400"
                 >
-                  fish.audio
+                  Fish Audio
                 </a>
-              </p>
+              </div>
             </div>
           )}
 
+          {/* 02 / COSTUMES PANEL */}
           {panel === "costume" && (
-            <div className="space-y-2">
-              <p className="text-[11px] text-cyan-300/80 mb-2">
-                Otomatis berganti sesuai alur obrolan (pantai, olahraga, sekolah), atau pilih manual di bawah:
+            <div className="space-y-3">
+              <div className="ba-badge mb-2">AUTO / MANUAL OVERRIDE</div>
+              <p className={`text-[11px] mb-3 ${isDark ? "text-cyan-200/80" : "text-[#3b678a]"}`}>
+                Kostum otomatis berganti dinamis sesuai dialog chat, atau pilih kostum spesifik di bawah:
               </p>
               {[
-                { id: "default", name: "Uniform (Abydos High)", desc: "Seragam sekolah klasik" },
-                { id: "sportswear", name: "Sportswear (PE Tracksuit)", desc: "Baju olahraga / senam" },
+                { id: "default", name: "Uniform (Abydos High)", desc: "Seragam sekolah klasik Abydos" },
+                { id: "sportswear", name: "Sportswear (PE Tracksuit)", desc: "Baju olahraga / senam sekolah" },
                 { id: "swimsuit", name: "Swimsuit (Summer Diorama)", desc: "Baju renang + pelampung paus" },
               ].map((c) => (
-                <button
+                <div
                   key={c.id}
                   onClick={() => onCostumeChange(c.id as CostumeType)}
-                  className={`w-full text-left p-3 rounded-xl transition-all border ${
-                    costume === c.id
-                      ? "bg-cyan-500/20 border-cyan-400 text-white shadow-md shadow-cyan-500/10"
-                      : "bg-white/[0.03] border-white/5 text-white/70 hover:bg-white/[0.08]"
+                  className={`p-3 rounded-xl flex items-center justify-between transition-all ${
+                    isDark
+                      ? `ba-tile ${costume === c.id ? "ba-tile--active" : ""}`
+                      : `ba-tile ba-tile--light ${costume === c.id ? "ba-tile--active" : ""}`
                   }`}
                 >
-                  <div className="text-sm font-medium">{c.name}</div>
-                  <div className="text-xs text-white/40 mt-0.5">{c.desc}</div>
-                </button>
+                  <div>
+                    <div className={`text-sm font-bold ${isDark ? "text-cyan-100" : "text-[#102a3e]"}`}>
+                      {c.name}
+                    </div>
+                    <div className={`text-xs mt-0.5 ${isDark ? "text-white/50" : "text-[#557e9e]"}`}>
+                      {c.desc}
+                    </div>
+                  </div>
+                  {costume === c.id && (
+                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-cyan-400 text-black">
+                      Active
+                    </span>
+                  )}
+                </div>
               ))}
             </div>
           )}
 
+          {/* 03 / SCENERY PANEL */}
           {panel === "scenery" && (
             <div className="space-y-3">
-              <p className="text-[11px] text-cyan-300/80 mb-2">
-                Scenery otomatis berganti saat kamu ajak Hoshino ke lokasi baru via chat!
+              <div className="ba-badge mb-2">SCENERY ADAPTIVE</div>
+              <p className={`text-[11px] mb-3 ${isDark ? "text-cyan-200/80" : "text-[#3b678a]"}`}>
+                Panggung latar otomatis berganti saat kamu mengajak Hoshino ke lokasi baru via chat:
               </p>
-              <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
+              <div className="grid grid-cols-2 gap-2.5 max-h-72 overflow-y-auto pr-1">
                 {Object.keys(BACKGROUND_MAP).map((bgKey) => (
-                  <button
+                  <div
                     key={bgKey}
                     onClick={() => onBgThemeChange(bgKey)}
-                    className={`p-2 rounded-xl border text-left flex flex-col gap-1.5 transition-all ${
-                      bgTheme === bgKey
-                        ? "border-cyan-400 bg-cyan-500/15"
-                        : "border-white/10 hover:border-white/30 bg-black/20"
+                    className={`p-2 rounded-xl flex flex-col gap-2 transition-all ${
+                      isDark
+                        ? `ba-tile ${bgTheme === bgKey ? "ba-tile--active" : ""}`
+                        : `ba-tile ba-tile--light ${bgTheme === bgKey ? "ba-tile--active" : ""}`
                     }`}
                   >
                     <div
-                      className="h-14 w-full rounded-lg bg-cover bg-center shadow-inner"
+                      className="h-16 w-full rounded-lg bg-cover bg-center shadow-md border border-black/10"
                       style={{ backgroundImage: `url(${BACKGROUND_MAP[bgKey]})` }}
                     />
-                    <span className="text-[11px] font-medium text-white/90 truncate capitalize">
-                      {bgKey.replace(/_/g, " ")}
-                    </span>
-                  </button>
+                    <div className="flex items-center justify-between">
+                      <span className={`text-[11px] font-bold truncate capitalize ${
+                        isDark ? "text-white/90" : "text-[#102a3e]"
+                      }`}>
+                        {bgKey.replace(/_/g, " ")}
+                      </span>
+                      {bgTheme === bgKey && (
+                        <span className="w-2 h-2 rounded-full bg-cyan-400" />
+                      )}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
           )}
 
+          {/* 04 / VOICE PANEL */}
           {panel === "voice" && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <label className="text-white/70 text-xs font-medium">
-                  Voice TTS (Fish Audio)
-                </label>
+              <div className={`flex items-center justify-between p-3 rounded-xl border ${
+                isDark ? "bg-cyan-500/10 border-cyan-400/20" : "bg-[#e0f2fe] border-[#38bdf8]/40"
+              }`}>
+                <div>
+                  <div className={`text-sm font-bold ${isDark ? "text-cyan-100" : "text-[#102a3e]"}`}>
+                    Voice Synthesizer
+                  </div>
+                  <div className={`text-xs mt-0.5 ${isDark ? "text-cyan-300/70" : "text-[#356a91]"}`}>
+                    Fish Audio Auto-Play
+                  </div>
+                </div>
                 <button
+                  type="button"
                   onClick={() => onVoiceEnabledChange(!voiceEnabled)}
-                  className={`relative w-10 h-5 rounded-full transition-colors ${
-                    voiceEnabled ? "bg-emerald-500" : "bg-white/20"
+                  className={`slanted-button text-xs ${
+                    voiceEnabled ? "slanted-button--active" : ""
                   }`}
                 >
-                  <span
-                    className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-md transition-transform ${
-                      voiceEnabled ? "translate-x-5" : ""
-                    }`}
-                  />
+                  <span>{voiceEnabled ? "ENABLED" : "MUTED"}</span>
                 </button>
               </div>
 
               {(isVoicePlaying || isVoiceFetching) && (
-                <div className="flex items-center gap-2 text-xs text-emerald-300/90 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  {isVoiceFetching ? "Generating voice..." : "Playing..."}
+                <div className={`flex items-center gap-2 text-xs border rounded-xl px-3.5 py-2.5 ${
+                  isDark
+                    ? "text-cyan-200 bg-cyan-500/20 border-cyan-400/30"
+                    : "text-[#034169] bg-[#bae6fd] border-[#38bdf8]/50"
+                }`}>
+                  <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 animate-pulse" />
+                  <span className="font-semibold">
+                    {isVoiceFetching ? "Generating voice..." : "Playing audio..."}
+                  </span>
                 </div>
               )}
 
-              <p className="text-white/40 text-[11px] leading-relaxed pt-1 border-t border-white/10">
-                API key tersimpan di browser ini dan dikirim melalui server aplikasi untuk menghindari CORS.
+              <p className={`text-[11px] leading-relaxed pt-2 border-t ${
+                isDark ? "border-cyan-500/20 text-white/40" : "border-[#38bdf8]/30 text-[#477394]"
+              }`}>
+                Fish Audio TTS diproses langsung melalui server proxy lokal untuk menghindari CORS browser.
               </p>
             </div>
           )}

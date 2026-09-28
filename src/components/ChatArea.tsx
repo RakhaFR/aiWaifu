@@ -9,112 +9,81 @@ interface Props {
   isVoicePlaying: boolean;
   isVoiceFetching: boolean;
   onSkipAudio: () => void;
+  theme?: "dark" | "light";
 }
 
-export default function ChatArea({ messages, loading, spriteTransform, isVoicePlaying, isVoiceFetching, onSkipAudio }: Props) {
+export default function ChatArea({
+  messages,
+  loading,
+  isVoicePlaying,
+  isVoiceFetching,
+  onSkipAudio,
+  theme = "dark",
+}: Props) {
   const latestMessage = messages[messages.length - 1];
   const latestHoshinoMsg = [...messages].reverse().find((m) => m.role === "hoshino");
   const latestUserMsg = [...messages].reverse().find((m) => m.role === "user");
 
-  // Calculate bubble position right next to Hoshino's face
-  const spriteX = spriteTransform.x;
-  const spriteY = spriteTransform.y;
-  const spriteScale = spriteTransform.scale;
-
-  const bubbleOffsetX = spriteX + 110 * spriteScale;
-  const bubbleOffsetY = spriteY - 180 * spriteScale;
-
   const isThinkingState = loading && latestMessage?.role === "user";
+  const isDark = theme === "dark";
 
   return (
-    <div className="relative w-full h-full flex flex-col justify-between pointer-events-none p-4 md:p-6">
-      {/* Hoshino Comic Speech Bubble (Positioned right beside Hoshino's face) */}
-      <div
-        style={{
-          transform: `translate(${bubbleOffsetX}px, ${bubbleOffsetY}px)`,
-        }}
-        className="absolute left-1/2 top-1/2 z-20 transition-transform duration-75 pointer-events-auto"
-      >
-        {(latestHoshinoMsg || loading) && (
-          <div className="relative animate-[fadeIn_0.15s_ease-out]">
-            <div
-              className={`relative bg-white text-slate-900 shadow-2xl border border-slate-200/90 transition-all ${
-                isThinkingState
-                  ? isVoiceFetching
-                    ? "rounded-2xl px-5 py-2.5 inline-flex min-w-[150px] cursor-pointer"
-                    : "rounded-full px-5 py-2.5 inline-flex min-w-[68px]"
-                  : "rounded-[1.75rem] px-5 py-3.5 md:px-6 md:py-4 max-w-xs sm:max-w-sm md:max-w-md"
-              }`}
-              onClick={isThinkingState && isVoiceFetching ? onSkipAudio : undefined}
-            >
-              {/* Tail / Thought Dots */}
-              {isThinkingState ? (
-                <>
-                  {/* Manga thought bubble dots */}
-                  <div className="absolute -left-2.5 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-white border border-slate-200 shadow-sm" />
-                  <div className="absolute -left-5 top-[60%] -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white border border-slate-200 shadow-sm" />
-                </>
-              ) : (
-                /* Seamless speech tail */
-                <div
-                  className="absolute -left-2.5 top-5 w-0 h-0 
-                  border-t-[6px] border-t-transparent 
-                  border-r-[12px] border-r-white 
-                  border-b-[6px] border-b-transparent 
-                  drop-shadow-[-1px_1px_1px_rgba(0,0,0,0.05)]"
-                />
-              )}
-
-              {isThinkingState ? (
-                <div className="flex flex-col items-center gap-1.5 text-slate-600">
-                  <div className="flex items-center gap-1 text-base font-bold tracking-widest leading-none px-1">
-                    <span className="animate-bounce">.</span>
-                    <span className="animate-bounce [animation-delay:0.15s]">.</span>
-                    <span className="animate-bounce [animation-delay:0.3s]">.</span>
-                  </div>
-                  {isVoiceFetching && (
-                    <span className="text-[10px] italic text-slate-500/50">
-                      Klik untuk lewati audio
-                    </span>
-                  )}
-                </div>
-              ) : (
-                <div>
-                  {/* Full Name Tag */}
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <span className="text-xs font-bold text-cyan-600 tracking-wide">
-                      Takanashi Hoshino
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-medium">
-                      ({"\u5C0F\u9CE5\u904A\u30DB\u30B7\u30CE"})
-                    </span>
-                    {(isVoicePlaying || isVoiceFetching) && (
-                      <span className="flex items-center gap-[3px] ml-1">
-                        <span className="w-[3px] h-3 bg-cyan-500 rounded-full animate-[voiceBar1_0.6s_ease-in-out_infinite]" />
-                        <span className="w-[3px] h-4 bg-cyan-400 rounded-full animate-[voiceBar2_0.6s_ease-in-out_infinite_0.15s]" />
-                        <span className="w-[3px] h-2.5 bg-cyan-500 rounded-full animate-[voiceBar3_0.6s_ease-in-out_infinite_0.3s]" />
-                      </span>
-                    )}
-                  </div>
-
-                  <p className="text-sm md:text-[15px] leading-relaxed font-normal text-slate-900 break-words whitespace-pre-wrap">
-                    {latestHoshinoMsg?.text || "Uhe~ Sensei... ada apa? Ngantuk banget nih..."}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Floating User Message on bottom right */}
-      <div className="w-full flex justify-end pb-3 md:pr-12 mt-auto">
-        {latestUserMsg && (
-          <div className="bg-slate-950/85 backdrop-blur-md border border-cyan-500/40 text-cyan-200 px-4 py-2 rounded-xl text-xs md:text-sm max-w-md shadow-2xl flex items-center gap-2 pointer-events-auto animate-[fadeIn_0.2s_ease-out]">
+    <div className="relative w-full flex-1 flex flex-col justify-end pointer-events-none px-4 md:px-8 pb-3">
+      {/* Latest Sensei User Prompt */}
+      {latestUserMsg && (
+        <div className="w-full max-w-4xl mx-auto flex justify-end mb-3 pointer-events-auto">
+          <div className="bg-[#182a3d]/90 backdrop-blur-md border border-cyan-400/40 text-cyan-100 px-4 py-2 rounded-xl text-xs md:text-sm shadow-xl flex items-center gap-2 max-w-lg animate-[fadeIn_0.2s_ease-out]">
+            <span className="text-[10px] font-extrabold text-cyan-400 uppercase tracking-wider">Sensei:</span>
             <span className="truncate">{latestUserMsg.text}</span>
           </div>
-        )}
+        </div>
+      )}
+
+      {/* Blue Archive Official Visual Novel Dialogue Frame */}
+      <div className="w-full flex justify-center pointer-events-auto">
+        <div className={`dialogue-wrap dialogue-wrap--${theme}`}>
+          {/* Speaker Badge */}
+          <div className="speaker-tag flex items-center gap-2">
+            <span>Takanashi Hoshino</span>
+            <span className="text-[10px] opacity-75 font-medium">小鳥遊ホシノ</span>
+            {(isVoicePlaying || isVoiceFetching) && (
+              <span className="flex items-center gap-[2.5px] ml-1">
+                <span className={`w-[3px] h-3 ${isDark ? "bg-cyan-950" : "bg-cyan-700"} rounded-full animate-[voiceBar1_0.6s_ease-in-out_infinite]`} />
+                <span className={`w-[3px] h-4 ${isDark ? "bg-cyan-900" : "bg-cyan-600"} rounded-full animate-[voiceBar2_0.6s_ease-in-out_infinite_0.15s]`} />
+                <span className={`w-[3px] h-2.5 ${isDark ? "bg-cyan-950" : "bg-cyan-700"} rounded-full animate-[voiceBar3_0.6s_ease-in-out_infinite_0.3s]`} />
+              </span>
+            )}
+          </div>
+
+          {/* Frame Box */}
+          <div
+            className={`dialogue-frame ${
+              isThinkingState && isVoiceFetching ? "cursor-pointer hover:brightness-105" : ""
+            }`}
+            onClick={isThinkingState && isVoiceFetching ? onSkipAudio : undefined}
+          >
+            {isThinkingState ? (
+              <div className={`flex flex-col items-center justify-center py-2 ${isDark ? "text-cyan-200" : "text-slate-700"}`}>
+                <div className="flex items-center gap-1.5 text-xl font-bold tracking-widest leading-none">
+                  <span className="animate-bounce">.</span>
+                  <span className="animate-bounce [animation-delay:0.15s]">.</span>
+                  <span className="animate-bounce [animation-delay:0.3s]">.</span>
+                </div>
+                {isVoiceFetching && (
+                  <span className={`text-xs font-semibold ${isDark ? "text-cyan-400/90" : "text-cyan-800/80"} mt-1`}>
+                    Klik untuk lewati audio dan tampilkan teks langsung
+                  </span>
+                )}
+              </div>
+            ) : (
+              <p className="whitespace-pre-wrap">
+                {latestHoshinoMsg?.text || "Uhe~ Sensei... ada apa? Hoshino lagi santai nih..."}
+              </p>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
 }
+
