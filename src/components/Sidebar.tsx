@@ -266,12 +266,12 @@ export default function Sidebar({
 
       {panel && (
         <div
-          className={`fixed left-16 top-6 z-50 w-96 rounded-xl p-6 animate-[fadeIn_0.2s_ease-out] max-h-[90vh] overflow-y-auto ${
+          className={`fixed left-16 top-4 bottom-4 z-50 w-[420px] sm:w-[460px] rounded-2xl p-6 animate-[fadeIn_0.2s_ease-out] flex flex-col h-[calc(100vh-2rem)] ${
             isDark ? "ba-panel text-white" : "ba-panel ba-panel--light text-[#153450]"
           }`}
         >
           {/* Blue Archive Panel Header */}
-          <div className={`flex items-start justify-between pb-3 border-b mb-5 ${
+          <div className={`flex items-start justify-between pb-3 border-b mb-4 flex-shrink-0 ${
             isDark ? "border-cyan-500/20" : "border-[#38bdf8]/30"
           }`}>
             <div>
@@ -307,6 +307,8 @@ export default function Sidebar({
               &times;
             </button>
           </div>
+
+          <div className="flex-1 overflow-y-auto pr-1.5 space-y-4">
 
           {/* 00 / CHARACTER SELECT PANEL */}
           {panel === "character" && (
@@ -562,7 +564,7 @@ export default function Sidebar({
               <p className={`text-[11px] mb-3 ${isDark ? "text-cyan-200/80" : "text-[#3b678a]"}`}>
                 Panggung latar otomatis berganti saat kamu mengajak murid ke lokasi baru via chat:
               </p>
-              <div className="grid grid-cols-2 gap-2.5 max-h-72 overflow-y-auto pr-1">
+              <div className="grid grid-cols-2 gap-2.5 max-h-[60vh] overflow-y-auto pr-1">
                 {Object.keys(BACKGROUND_MAP).map((bgKey) => (
                   <div
                     key={bgKey}
@@ -722,6 +724,7 @@ export default function Sidebar({
               </div>
             </div>
           )}
+          </div>
         </div>
       )}
 

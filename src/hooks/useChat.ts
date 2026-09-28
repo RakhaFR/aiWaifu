@@ -5,9 +5,9 @@ import type { ChatMessage } from "@/lib/gemini";
 import type { Emotion, CostumeType, CharacterId } from "@/lib/emotionMap";
 import { CHARACTERS } from "@/lib/emotionMap";
 
-const STORAGE_KEY_MESSAGES = "hoshino_chat_history";
-const STORAGE_KEY_STATE = "hoshino_chat_state";
 const STORAGE_KEY_CHAR = "hoshino_active_character";
+const getStorageKeyMessages = (charId: CharacterId) => `hoshino_chat_history_${charId}`;
+const getStorageKeyState = (charId: CharacterId) => `hoshino_chat_state_${charId}`;
 
 export function useChat() {
   const [characterId, setCharacterIdState] = useState<CharacterId>("takanashi_hoshino");
@@ -17,33 +17,48 @@ export function useChat() {
   const [currentCostume, setCurrentCostume] = useState<CostumeType>("default");
   const [currentBackground, setCurrentBackground] = useState<string>("committee_room");
 
-  // Load history & state from localStorage on client mount
-  useEffect(() => {
-    try {
-      const savedChar = localStorage.getItem(STORAGE_KEY_CHAR);
-      if (savedChar && (savedChar === "takanashi_hoshino" || savedChar === "sorasaki_hina" || savedChar === "nakamasa_ichika")) {
-        setCharacterIdState(savedChar);
-      }
+  // Load history & state for a given character
+  const loadCharacterData = useCallback((charId: CharacterId) => {
+    const charMeta = CHARACTERS[charId] || CHARACTERS.takanashi_hoshino;
+    let loadedMessages: ChatMessage[] = [];
+    let loadedEmotion: Emotion = "neutral";
+    let loadedCostume: CostumeType = charMeta.defaultCostume;
+    let loadedBackground: string = charMeta.defaultBackground;
 
-      const savedMessages = localStorage.getItem(STORAGE_KEY_MESSAGES);
+    try {
+      const savedMessages = localStorage.getItem(getStorageKeyMessages(charId));
       if (savedMessages) {
         const parsed = JSON.parse(savedMessages);
-        if (Array.isArray(parsed)) {
-          setMessages(parsed);
-        }
+        if (Array.isArray(parsed)) loadedMessages = parsed;
       }
 
-      const savedState = localStorage.getItem(STORAGE_KEY_STATE);
+      const savedState = localStorage.getItem(getStorageKeyState(charId));
       if (savedState) {
         const parsed = JSON.parse(savedState);
-        if (parsed.emotion) setCurrentEmotion(parsed.emotion);
-        if (parsed.costume) setCurrentCostume(parsed.costume);
-        if (parsed.background) setCurrentBackground(parsed.background);
+        if (parsed.emotion) loadedEmotion = parsed.emotion;
+        if (parsed.costume) loadedCostume = parsed.costume;
+        if (parsed.background) loadedBackground = parsed.background;
       }
-    } catch {
-      // Ignore corrupted localStorage data
-    }
+    } catch {}
+
+    setMessages(loadedMessages);
+    setCurrentEmotion(loadedEmotion);
+    setCurrentCostume(loadedCostume);
+    setCurrentBackground(loadedBackground);
   }, []);
+
+  // Initial client mount
+  useEffect(() => {
+    try {
+      const savedChar = localStorage.getItem(STORAGE_KEY_CHAR) as CharacterId | null;
+      const initialChar: CharacterId =
+        savedChar && CHARACTERS[savedChar] ? savedChar : "takanashi_hoshino";
+      setCharacterIdState(initialChar);
+      loadCharacterData(initialChar);
+    } catch {
+      loadCharacterData("takanashi_hoshino");
+    }
+  }, [loadCharacterData]);
 
   const saveToStorage = (
     newMessages: ChatMessage[],
@@ -53,33 +68,25 @@ export function useChat() {
     charId: CharacterId = characterId
   ) => {
     try {
-      localStorage.setItem(STORAGE_KEY_MESSAGES, JSON.stringify(newMessages));
+      localStorage.setItem(getStorageKeyMessages(charId), JSON.stringify(newMessages));
       localStorage.setItem(
-        STORAGE_KEY_STATE,
+        getStorageKeyState(charId),
         JSON.stringify({ emotion, costume, background })
       );
       localStorage.setItem(STORAGE_KEY_CHAR, charId);
-    } catch {
-      // Storage quota exceeded or unavailable
-    }
+    } catch {}
   };
 
-  const setCharacterId = useCallback((id: CharacterId) => {
-    setCharacterIdState(id);
-    const charMeta = CHARACTERS[id];
-    const defaultCostume = charMeta.defaultCostume;
-    const defaultBg = charMeta.defaultBackground;
-    setCurrentCostume(defaultCostume);
-    setCurrentBackground(defaultBg);
-    setCurrentEmotion("neutral");
-    try {
-      localStorage.setItem(STORAGE_KEY_CHAR, id);
-      localStorage.setItem(
-        STORAGE_KEY_STATE,
-        JSON.stringify({ emotion: "neutral", costume: defaultCostume, background: defaultBg })
-      );
-    } catch {}
-  }, []);
+  const setCharacterId = useCallback(
+    (id: CharacterId) => {
+      setCharacterIdState(id);
+      try {
+        localStorage.setItem(STORAGE_KEY_CHAR, id);
+      } catch {}
+      loadCharacterData(id);
+    },
+    [loadCharacterData]
+  );
 
   const sendMessage = useCallback(
     async (
@@ -167,12 +174,10 @@ export function useChat() {
     setMessages([]);
     setCurrentEmotion("neutral");
     try {
-      localStorage.removeItem(STORAGE_KEY_MESSAGES);
-      localStorage.removeItem(STORAGE_KEY_STATE);
-    } catch {
-      // Ignore
-    }
-  }, []);
+      localStorage.removeItem(getStorageKeyMessages(characterId));
+      localStorage.removeItem(getStorageKeyState(characterId));
+    } catch {}
+  }, [characterId]);
 
   const handleManualCostumeChange = (c: CostumeType) => {
     setCurrentCostume(c);
@@ -198,4 +203,5 @@ export function useChat() {
     clearMessages,
   };
 }
+
 

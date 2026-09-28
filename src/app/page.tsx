@@ -99,14 +99,7 @@ export default function Home() {
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30 pointer-events-none" />
 
       {/* Top Header Blue Archive Controls */}
-      <header className="relative z-30 w-full px-6 py-4 flex items-center justify-between pointer-events-none">
-        <div className="flex items-center gap-2">
-          {/* Active Unit Badge */}
-          <div className="bg-[#0b1726]/85 backdrop-blur-md border border-cyan-500/30 px-3.5 py-1.5 rounded-lg text-[11px] font-extrabold text-cyan-300 uppercase tracking-widest pointer-events-auto">
-            {activeCharMeta.school} / {activeCharMeta.unit}
-          </div>
-        </div>
-
+      <header className="relative z-30 w-full px-6 py-4 flex items-center justify-end pointer-events-none">
         <div className="flex items-center gap-2 pointer-events-auto">
           {messages.length > 0 && (
             <button
