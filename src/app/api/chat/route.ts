@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { chatWithHoshino, type ChatMessage } from "@/lib/gemini";
+import { chatWithCharacter, type ChatMessage } from "@/lib/gemini";
+import type { CharacterId } from "@/lib/emotionMap";
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, history, apiKey, model } = (await req.json()) as {
+    const { message, history, apiKey, model, characterId } = (await req.json()) as {
       message: string;
       history: ChatMessage[];
       apiKey: string;
       model?: string;
+      characterId?: CharacterId;
     };
 
     if (!apiKey) {
@@ -17,10 +19,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const result = await chatWithHoshino(apiKey, history, message, model);
+    const targetCharacter = characterId || "takanashi_hoshino";
+    const result = await chatWithCharacter(targetCharacter, apiKey, history, message, model);
     return NextResponse.json(result);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
+

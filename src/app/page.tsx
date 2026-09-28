@@ -7,7 +7,7 @@ import InputBar from "@/components/InputBar";
 import Sidebar from "@/components/Sidebar";
 import { useChat } from "@/hooks/useChat";
 import { useVoice } from "@/hooks/useVoice";
-import { BACKGROUND_MAP } from "@/lib/emotionMap";
+import { BACKGROUND_MAP, CHARACTERS } from "@/lib/emotionMap";
 
 function useLocalStorage(key: string, fallback: string) {
   const value = useSyncExternalStore(
@@ -39,23 +39,9 @@ export default function Home() {
   const [showHistory, setShowHistory] = useState(false);
   const [spriteTransform, setSpriteTransform] = useState<SpriteTransform>(DEFAULT_TRANSFORM);
 
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("hoshino_sprite_transform");
-      if (saved) {
-        setSpriteTransform(JSON.parse(saved));
-      }
-    } catch {
-      // fallback
-    }
-  }, []);
-
-  const handleTransformChange = (t: SpriteTransform) => {
-    setSpriteTransform(t);
-    localStorage.setItem("hoshino_sprite_transform", JSON.stringify(t));
-  };
-
   const {
+    characterId,
+    setCharacterId,
     messages,
     loading,
     currentEmotion,
@@ -68,6 +54,26 @@ export default function Home() {
   } = useChat();
 
   const voice = useVoice();
+  const activeCharMeta = CHARACTERS[characterId] || CHARACTERS.takanashi_hoshino;
+
+  // Persist sprite transform per character
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`hoshino_sprite_transform_${characterId}`);
+      if (saved) {
+        setSpriteTransform(JSON.parse(saved));
+      } else {
+        setSpriteTransform(DEFAULT_TRANSFORM);
+      }
+    } catch {
+      setSpriteTransform(DEFAULT_TRANSFORM);
+    }
+  }, [characterId]);
+
+  const handleTransformChange = (t: SpriteTransform) => {
+    setSpriteTransform(t);
+    localStorage.setItem(`hoshino_sprite_transform_${characterId}`, JSON.stringify(t));
+  };
 
   const handleSend = (text: string) => {
     if (!apiKey) {
@@ -75,7 +81,7 @@ export default function Home() {
       return;
     }
     void sendMessage(text, apiKey, selectedModel, (message, showText) =>
-      voice.speak(message.text, apiKey, showText)
+      voice.speak(message.text, apiKey, showText, activeCharMeta.defaultVoiceId)
     );
   };
 
@@ -95,6 +101,10 @@ export default function Home() {
       {/* Top Header Blue Archive Controls */}
       <header className="relative z-30 w-full px-6 py-4 flex items-center justify-between pointer-events-none">
         <div className="flex items-center gap-2">
+          {/* Active Unit Badge */}
+          <div className="bg-[#0b1726]/85 backdrop-blur-md border border-cyan-500/30 px-3.5 py-1.5 rounded-lg text-[11px] font-extrabold text-cyan-300 uppercase tracking-widest pointer-events-auto">
+            {activeCharMeta.school} / {activeCharMeta.unit}
+          </div>
         </div>
 
         <div className="flex items-center gap-2 pointer-events-auto">
@@ -138,6 +148,8 @@ export default function Home() {
         onToggleOpen={() => setIsMenuOpen((prev) => !prev)}
         theme={uiTheme as "dark" | "light"}
         onThemeChange={setUiTheme}
+        character={characterId}
+        onCharacterChange={setCharacterId}
         apiKey={apiKey}
         onApiKeyChange={setApiKey}
         costume={currentCostume}
@@ -157,12 +169,17 @@ export default function Home() {
         onFishAudioReferenceIdChange={voice.setFishAudioReferenceId}
         voiceLanguage={voice.voiceLanguage}
         onVoiceLanguageChange={voice.setVoiceLanguage}
+        presets={voice.presets}
+        onAddPreset={voice.addPreset}
+        onDeletePreset={voice.deletePreset}
+        onSelectPreset={voice.selectPreset}
         isVoicePlaying={voice.isPlaying}
         isVoiceFetching={voice.isFetching}
       />
 
       {/* 2D Sprite Layer */}
       <SpriteDisplay
+        character={characterId}
         emotion={currentEmotion}
         costume={currentCostume}
         isEditMode={isEditMode}
@@ -174,6 +191,7 @@ export default function Home() {
       {/* Dialogue Layer */}
       <div className="relative z-20 flex-1 flex flex-col justify-between">
         <ChatArea
+          character={characterId}
           messages={messages}
           loading={loading}
           spriteTransform={spriteTransform}
@@ -210,21 +228,25 @@ export default function Home() {
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {messages.map((m, i) => (
-                <div
-                  key={i}
-                  className={`p-3 rounded-xl text-sm ${
-                    m.role === "user"
-                      ? "bg-cyan-600/20 border border-cyan-500/30 ml-8 text-cyan-100"
-                      : "bg-white/[0.04] border border-white/5 mr-8 text-white/90"
-                  }`}
-                >
-                  <div className="text-[11px] font-bold text-cyan-400 mb-1 capitalize">
-                    {m.role === "user" ? "Sensei" : "Takanashi Hoshino"}
+              {messages.map((m, i) => {
+                const isUser = m.role === "user";
+                const msgCharMeta = (m.characterId && CHARACTERS[m.characterId]) || activeCharMeta;
+                return (
+                  <div
+                    key={i}
+                    className={`p-3 rounded-xl text-sm ${
+                      isUser
+                        ? "bg-cyan-600/20 border border-cyan-500/30 ml-8 text-cyan-100"
+                        : "bg-white/[0.04] border border-white/5 mr-8 text-white/90"
+                    }`}
+                  >
+                    <div className="text-[11px] font-bold text-cyan-400 mb-1 capitalize">
+                      {isUser ? "Sensei" : msgCharMeta.fullName}
+                    </div>
+                    <p className="whitespace-pre-wrap">{m.text}</p>
                   </div>
-                  <p className="whitespace-pre-wrap">{m.text}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

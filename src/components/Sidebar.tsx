@@ -1,15 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import type { CostumeType } from "@/lib/emotionMap";
-import { BACKGROUND_MAP } from "@/lib/emotionMap";
+import type { CostumeType, CharacterId } from "@/lib/emotionMap";
+import { BACKGROUND_MAP, CHARACTERS } from "@/lib/emotionMap";
 import { AVAILABLE_MODELS } from "@/lib/gemini";
+import type { VoicePreset } from "@/hooks/useVoice";
 
 interface Props {
   isOpen?: boolean;
   onToggleOpen?: () => void;
   theme?: "dark" | "light";
   onThemeChange?: (theme: "dark" | "light") => void;
+  character: CharacterId;
+  onCharacterChange: (c: CharacterId) => void;
   apiKey: string;
   onApiKeyChange: (key: string) => void;
   costume: CostumeType;
@@ -29,11 +32,20 @@ interface Props {
   onFishAudioReferenceIdChange: (id: string) => void;
   voiceLanguage: "ja" | "id" | "en";
   onVoiceLanguageChange: (language: "ja" | "id" | "en") => void;
+  presets: VoicePreset[];
+  onAddPreset: (name: string, refId: string, charId?: CharacterId) => void;
+  onDeletePreset: (id: string) => void;
+  onSelectPreset: (refId: string) => void;
   isVoicePlaying: boolean;
   isVoiceFetching: boolean;
 }
 
 const ICONS = {
+  character: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} className="w-5 h-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+    </svg>
+  ),
   move: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} className="w-5 h-5">
       <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
@@ -67,12 +79,14 @@ const ICONS = {
   ),
 };
 
-type Panel = "settings" | "costume" | "scenery" | "voice" | null;
+type Panel = "character" | "costume" | "scenery" | "voice" | "settings" | null;
 
 export default function Sidebar({
   isOpen = false,
   theme = "dark",
   onThemeChange,
+  character,
+  onCharacterChange,
   apiKey,
   onApiKeyChange,
   costume,
@@ -92,6 +106,10 @@ export default function Sidebar({
   onFishAudioReferenceIdChange,
   voiceLanguage,
   onVoiceLanguageChange,
+  presets,
+  onAddPreset,
+  onDeletePreset,
+  onSelectPreset,
   isVoicePlaying,
   isVoiceFetching,
 }: Props) {
@@ -100,10 +118,28 @@ export default function Sidebar({
   const [showApiKey, setShowApiKey] = useState(false);
   const [showFishAudioApiKey, setShowFishAudioApiKey] = useState(false);
 
+  // New voice preset form state
+  const [isAddingPreset, setIsAddingPreset] = useState(false);
+  const [newPresetName, setNewPresetName] = useState("");
+  const [newPresetRefId, setNewPresetRefId] = useState("");
+
   const isVisible = isOpen || hovered || isEditMode || panel !== null;
   const isDark = theme === "dark";
 
-  const togglePanel = (p: Panel) => setPanel((prev) => (prev === p ? null : p));
+  const togglePanel = (p: Panel) => {
+    setIsAddingPreset(false);
+    setPanel((prev) => (prev === p ? null : p));
+  };
+
+  const activeCharacterMeta = CHARACTERS[character] || CHARACTERS.takanashi_hoshino;
+
+  const handleSaveNewPreset = () => {
+    if (!newPresetName.trim() || !newPresetRefId.trim()) return;
+    onAddPreset(newPresetName.trim(), newPresetRefId.trim(), character);
+    setNewPresetName("");
+    setNewPresetRefId("");
+    setIsAddingPreset(false);
+  };
 
   return (
     <>
@@ -121,6 +157,20 @@ export default function Sidebar({
               : "opacity-0"
           }`}
         >
+          {/* 00 / Character Select */}
+          <button
+            onClick={() => togglePanel("character")}
+            className={`p-2.5 rounded-xl transition-all ${
+              panel === "character"
+                ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/40"
+                : "text-white/70 hover:text-cyan-300 hover:bg-white/10"
+            }`}
+            title="Select Student Character"
+          >
+            {ICONS.character}
+          </button>
+
+          {/* Edit Mode */}
           <button
             onClick={onToggleEditMode}
             className={`p-2.5 rounded-xl transition-all ${
@@ -133,6 +183,7 @@ export default function Sidebar({
             {ICONS.move}
           </button>
 
+          {/* Costume */}
           <button
             onClick={() => togglePanel("costume")}
             className={`p-2.5 rounded-xl transition-all ${
@@ -145,6 +196,7 @@ export default function Sidebar({
             {ICONS.costume}
           </button>
 
+          {/* Scenery */}
           <button
             onClick={() => togglePanel("scenery")}
             className={`p-2.5 rounded-xl transition-all ${
@@ -157,6 +209,7 @@ export default function Sidebar({
             {ICONS.scenery}
           </button>
 
+          {/* Voice */}
           <button
             onClick={() => togglePanel("voice")}
             className={`p-2.5 rounded-xl transition-all relative ${
@@ -166,7 +219,7 @@ export default function Sidebar({
                   ? "text-cyan-400 hover:text-cyan-300 hover:bg-white/10"
                   : "text-white/70 hover:text-cyan-300 hover:bg-white/10"
             }`}
-            title="Voice Settings (Fish Audio)"
+            title="Voice Synthesizer (Fish Audio Presets)"
           >
             {ICONS.voice}
             {(isVoicePlaying || isVoiceFetching) && (
@@ -174,6 +227,7 @@ export default function Sidebar({
             )}
           </button>
 
+          {/* Settings */}
           <button
             onClick={() => togglePanel("settings")}
             className={`p-2.5 rounded-xl transition-all ${
@@ -188,6 +242,7 @@ export default function Sidebar({
 
           <div className="flex-1" />
 
+          {/* Clear Chat */}
           <button
             onClick={onClearChat}
             className="p-2.5 rounded-xl text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-colors"
@@ -204,6 +259,7 @@ export default function Sidebar({
           onClick={() => {
             setPanel(null);
             setHovered(false);
+            setIsAddingPreset(false);
           }}
         />
       )}
@@ -222,24 +278,27 @@ export default function Sidebar({
               <span className={`text-[10px] font-extrabold uppercase tracking-widest ${
                 isDark ? "text-cyan-400" : "text-[#0284c7]"
               }`}>
+                {panel === "character" && "00 / Student Roster"}
                 {panel === "settings" && "01 / Config & System"}
-                {panel === "costume" && "02 / Wardrobe Preset"}
+                {panel === "costume" && `02 / ${activeCharacterMeta.name} Wardrobe`}
                 {panel === "scenery" && "03 / Mission Scenery"}
                 {panel === "voice" && "04 / Voice Synthesizer"}
               </span>
               <h3 className={`font-extrabold text-lg tracking-tight flex items-center gap-2 mt-0.5 ${
                 isDark ? "text-cyan-100" : "text-[#102a3e]"
               }`}>
+                {panel === "character" && "Select Student"}
                 {panel === "settings" && "System Settings"}
                 {panel === "costume" && "Costume Selection"}
                 {panel === "scenery" && "Background Stage"}
-                {panel === "voice" && "Fish Audio TTS"}
+                {panel === "voice" && "Fish Audio Presets"}
               </h3>
             </div>
             <button
               onClick={() => {
                 setPanel(null);
                 setHovered(false);
+                setIsAddingPreset(false);
               }}
               className={`text-xl px-2 py-0.5 transition-colors ${
                 isDark ? "text-cyan-300/60 hover:text-cyan-200" : "text-[#477394] hover:text-[#102a3e]"
@@ -248,6 +307,53 @@ export default function Sidebar({
               &times;
             </button>
           </div>
+
+          {/* 00 / CHARACTER SELECT PANEL */}
+          {panel === "character" && (
+            <div className="space-y-3">
+              <div className="ba-badge mb-2">ACTIVE STUDENT</div>
+              <p className={`text-[11px] mb-3 ${isDark ? "text-cyan-200/80" : "text-[#3b678a]"}`}>
+                Pilih murid yang ingin kamu ajak berinteraksi:
+              </p>
+              {(Object.keys(CHARACTERS) as CharacterId[]).map((cId) => {
+                const char = CHARACTERS[cId];
+                const isActive = character === cId;
+                return (
+                  <div
+                    key={cId}
+                    onClick={() => {
+                      onCharacterChange(cId);
+                      onSelectPreset(char.defaultVoiceId);
+                    }}
+                    className={`p-3.5 rounded-xl flex items-center justify-between transition-all ${
+                      isDark
+                        ? `ba-tile ${isActive ? "ba-tile--active" : ""}`
+                        : `ba-tile ba-tile--light ${isActive ? "ba-tile--active" : ""}`
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm font-bold ${isDark ? "text-cyan-100" : "text-[#102a3e]"}`}>
+                          {char.fullName}
+                        </span>
+                        <span className={`text-xs ${isDark ? "text-cyan-400" : "text-[#0284c7]"}`}>
+                          {char.jpName}
+                        </span>
+                      </div>
+                      <div className={`text-xs mt-1 ${isDark ? "text-white/50" : "text-[#557e9e]"}`}>
+                        {char.school} • {char.unit}
+                      </div>
+                    </div>
+                    {isActive && (
+                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-cyan-400 text-black">
+                        Active
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* 01 / SETTINGS PANEL */}
           {panel === "settings" && (
@@ -349,25 +455,6 @@ export default function Sidebar({
                 <label className={`text-xs block mb-1 font-semibold ${
                   isDark ? "text-white/80" : "text-[#1a4464]"
                 }`}>
-                  Voice Model ID / Reference ID
-                </label>
-                <input
-                  type="text"
-                  value={fishAudioReferenceId}
-                  onChange={(e) => onFishAudioReferenceIdChange(e.target.value)}
-                  placeholder="b94e6f4628ae4ec898981cc171faf42d"
-                  className={`w-full rounded-xl px-3 py-2 text-sm outline-none transition-all ${
-                    isDark
-                      ? "bg-white/[0.06] border border-cyan-500/30 text-white placeholder-white/20 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50"
-                      : "bg-white border border-[#38bdf8]/40 text-[#102a3e] placeholder-slate-400 focus:border-[#0284c7] focus:ring-1 focus:ring-sky-400/50 shadow-sm"
-                  }`}
-                />
-              </div>
-
-              <div>
-                <label className={`text-xs block mb-1 font-semibold ${
-                  isDark ? "text-white/80" : "text-[#1a4464]"
-                }`}>
                   Bahasa Suara (TTS Language)
                 </label>
                 <select
@@ -440,11 +527,7 @@ export default function Sidebar({
               <p className={`text-[11px] mb-3 ${isDark ? "text-cyan-200/80" : "text-[#3b678a]"}`}>
                 Kostum otomatis berganti dinamis sesuai dialog chat, atau pilih kostum spesifik di bawah:
               </p>
-              {[
-                { id: "default", name: "Uniform (Abydos High)", desc: "Seragam sekolah klasik Abydos" },
-                { id: "sportswear", name: "Sportswear (PE Tracksuit)", desc: "Baju olahraga / senam sekolah" },
-                { id: "swimsuit", name: "Swimsuit (Summer Diorama)", desc: "Baju renang + pelampung paus" },
-              ].map((c) => (
+              {activeCharacterMeta.costumes.map((c) => (
                 <div
                   key={c.id}
                   onClick={() => onCostumeChange(c.id as CostumeType)}
@@ -477,7 +560,7 @@ export default function Sidebar({
             <div className="space-y-3">
               <div className="ba-badge mb-2">SCENERY ADAPTIVE</div>
               <p className={`text-[11px] mb-3 ${isDark ? "text-cyan-200/80" : "text-[#3b678a]"}`}>
-                Panggung latar otomatis berganti saat kamu mengajak Hoshino ke lokasi baru via chat:
+                Panggung latar otomatis berganti saat kamu mengajak murid ke lokasi baru via chat:
               </p>
               <div className="grid grid-cols-2 gap-2.5 max-h-72 overflow-y-auto pr-1">
                 {Object.keys(BACKGROUND_MAP).map((bgKey) => (
@@ -510,9 +593,10 @@ export default function Sidebar({
             </div>
           )}
 
-          {/* 04 / VOICE PANEL */}
+          {/* 04 / VOICE PANEL WITH QUICK PRESET MANAGER */}
           {panel === "voice" && (
             <div className="space-y-4">
+              {/* Toggle Voice Audio */}
               <div className={`flex items-center justify-between p-3 rounded-xl border ${
                 isDark ? "bg-cyan-500/10 border-cyan-400/20" : "bg-[#e0f2fe] border-[#38bdf8]/40"
               }`}>
@@ -548,13 +632,185 @@ export default function Sidebar({
                 </div>
               )}
 
-              <p className={`text-[11px] leading-relaxed pt-2 border-t ${
-                isDark ? "border-cyan-500/20 text-white/40" : "border-[#38bdf8]/30 text-[#477394]"
-              }`}>
-                Fish Audio TTS diproses langsung melalui server proxy lokal untuk menghindari CORS browser.
-              </p>
+              {/* Quick Voice Presets List */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between pt-2">
+                  <span className={`text-xs font-bold uppercase tracking-wider ${
+                    isDark ? "text-cyan-300" : "text-[#1a4464]"
+                  }`}>
+                    Saved Voice Presets
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingPreset(true)}
+                    className="text-xs font-bold text-cyan-500 hover:text-cyan-400 flex items-center gap-1"
+                  >
+                    + Add New Voice
+                  </button>
+                </div>
+
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                  {presets.map((p) => {
+                    const isSelected = fishAudioReferenceId === p.referenceId;
+                    const isDefault = p.id.startsWith("preset_") && p.id.endsWith("_default");
+
+                    return (
+                      <div
+                        key={p.id}
+                        className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 transition-all ${
+                          isSelected
+                            ? isDark
+                              ? "border-cyan-400 bg-cyan-500/20 shadow-md shadow-cyan-500/10"
+                              : "border-[#0284c7] bg-[#e0f2fe] shadow-md shadow-sky-500/10"
+                            : isDark
+                              ? "border-white/10 bg-white/[0.03] hover:border-cyan-500/30"
+                              : "border-slate-200 bg-white hover:border-[#38bdf8]/50"
+                        }`}
+                      >
+                        <div
+                          className="flex-1 min-w-0 cursor-pointer"
+                          onClick={() => onSelectPreset(p.referenceId)}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <span className={`text-xs font-bold truncate ${
+                              isDark ? "text-cyan-100" : "text-[#102a3e]"
+                            }`}>
+                              {p.name}
+                            </span>
+                            {isSelected && (
+                              <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-cyan-400 text-black">
+                                ACTIVE
+                              </span>
+                            )}
+                          </div>
+                          <span className={`text-[10px] truncate block font-mono ${
+                            isDark ? "text-white/40" : "text-slate-400"
+                          }`}>
+                            ID: {p.referenceId.slice(0, 16)}...
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          {!isSelected && (
+                            <button
+                              type="button"
+                              onClick={() => onSelectPreset(p.referenceId)}
+                              className={`px-2 py-1 rounded text-[10px] font-bold transition-colors ${
+                                isDark
+                                  ? "bg-white/10 text-cyan-300 hover:bg-cyan-500/30"
+                                  : "bg-slate-100 text-[#0284c7] hover:bg-sky-100"
+                              }`}
+                            >
+                              Use
+                            </button>
+                          )}
+                          {!isDefault && (
+                            <button
+                              type="button"
+                              onClick={() => onDeletePreset(p.id)}
+                              className="p-1.5 rounded text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                              title="Delete preset"
+                            >
+                              {ICONS.trash}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Frame Baru: Modal Tambah Voice Preset */}
+      {isAddingPreset && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
+          <div className={`w-full max-w-md rounded-2xl p-6 shadow-2xl animate-[fadeIn_0.15s_ease-out] ${
+            isDark ? "ba-panel text-white" : "ba-panel ba-panel--light text-[#153450]"
+          }`}>
+            <div className="flex items-center justify-between pb-3 border-b border-cyan-500/20 mb-4">
+              <div>
+                <span className="text-[10px] font-extrabold text-cyan-400 tracking-widest uppercase">
+                  CUSTOM VOICE SYNTHESIZER
+                </span>
+                <h3 className={`text-base font-extrabold tracking-wider ${
+                  isDark ? "text-cyan-100" : "text-[#102a3e]"
+                }`}>
+                  + Add New Voice Model
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddingPreset(false)}
+                className="text-white/40 hover:text-white text-xl px-2"
+              >
+                &times;
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className={`text-xs block mb-1 font-semibold ${
+                  isDark ? "text-white/80" : "text-[#1a4464]"
+                }`}>
+                  Nama Label Suara
+                </label>
+                <input
+                  type="text"
+                  value={newPresetName}
+                  onChange={(e) => setNewPresetName(e.target.value)}
+                  placeholder="Contoh: Hina Tsundere, Ichika Soft..."
+                  className={`w-full rounded-xl px-3 py-2 text-sm outline-none ${
+                    isDark
+                      ? "bg-white/[0.06] border border-cyan-500/30 text-white placeholder-white/20 focus:border-cyan-400"
+                      : "bg-white border border-[#38bdf8]/40 text-[#102a3e] placeholder-slate-400 focus:border-[#0284c7]"
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label className={`text-xs block mb-1 font-semibold ${
+                  isDark ? "text-white/80" : "text-[#1a4464]"
+                }`}>
+                  Fish Audio Reference ID
+                </label>
+                <input
+                  type="text"
+                  value={newPresetRefId}
+                  onChange={(e) => setNewPresetRefId(e.target.value)}
+                  placeholder="ffa3fa64f7604f35a102444c10e1ace3..."
+                  className={`w-full rounded-xl px-3 py-2 text-sm outline-none font-mono ${
+                    isDark
+                      ? "bg-white/[0.06] border border-cyan-500/30 text-white placeholder-white/20 focus:border-cyan-400"
+                      : "bg-white border border-[#38bdf8]/40 text-[#102a3e] placeholder-slate-400 focus:border-[#0284c7]"
+                  }`}
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-cyan-500/20">
+                <button
+                  type="button"
+                  onClick={() => setIsAddingPreset(false)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                    isDark ? "bg-white/10 text-white/70 hover:bg-white/20" : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                  }`}
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveNewPreset}
+                  disabled={!newPresetName.trim() || !newPresetRefId.trim()}
+                  className="slanted-button slanted-button--active text-xs disabled:opacity-50"
+                >
+                  <span>Simpan Voice</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </>

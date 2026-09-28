@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import { useMemo, useEffect, useRef } from "react";
-import type { Emotion, CostumeType } from "@/lib/emotionMap";
-import { getSpriteIndex, getSpritePath } from "@/lib/emotionMap";
+import type { Emotion, CostumeType, CharacterId } from "@/lib/emotionMap";
+import { getSpriteIndex, getSpritePath, CHARACTERS } from "@/lib/emotionMap";
 
 export interface SpriteTransform {
   x: number;
@@ -12,6 +12,7 @@ export interface SpriteTransform {
 }
 
 interface Props {
+  character: CharacterId;
   emotion: Emotion;
   costume: CostumeType;
   isEditMode: boolean;
@@ -27,6 +28,7 @@ export const DEFAULT_TRANSFORM: SpriteTransform = {
 };
 
 export default function SpriteDisplay({
+  character = "takanashi_hoshino",
   emotion,
   costume,
   isEditMode,
@@ -41,10 +43,11 @@ export default function SpriteDisplay({
 
   const effectiveEmotion: Emotion = isThinking ? "thinking" : emotion;
   const spriteIdx = useMemo(
-    () => getSpriteIndex(costume, effectiveEmotion),
-    [costume, effectiveEmotion]
+    () => getSpriteIndex(character, costume, effectiveEmotion),
+    [character, costume, effectiveEmotion]
   );
-  const src = getSpritePath(costume, spriteIdx);
+  const src = getSpritePath(character, costume, spriteIdx);
+  const charMeta = CHARACTERS[character] || CHARACTERS.takanashi_hoshino;
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isEditMode) return;
@@ -137,9 +140,9 @@ export default function SpriteDisplay({
         )}
 
         <Image
-          key={`${costume}-${spriteIdx}`}
+          key={`${character}-${costume}-${spriteIdx}`}
           src={src}
-          alt={`Hoshino - ${effectiveEmotion}`}
+          alt={`${charMeta.name} - ${effectiveEmotion}`}
           width={650}
           height={950}
           priority

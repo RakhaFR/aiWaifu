@@ -1,23 +1,54 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { CharacterId } from "@/lib/emotionMap";
+import { CHARACTERS } from "@/lib/emotionMap";
 
 const STORAGE_KEY_VOICE = "hoshino_fish_audio_settings";
-const DEFAULT_REFERENCE_ID = "b94e6f4628ae4ec898981cc171faf42d";
 export type VoiceLanguage = "ja" | "id" | "en";
+
+export interface VoicePreset {
+  id: string;
+  name: string;
+  referenceId: string;
+  characterId?: CharacterId;
+}
+
+export const DEFAULT_PRESETS: VoicePreset[] = [
+  {
+    id: "preset_hoshino_default",
+    name: "Takanashi Hoshino (Default)",
+    referenceId: CHARACTERS.takanashi_hoshino.defaultVoiceId,
+    characterId: "takanashi_hoshino",
+  },
+  {
+    id: "preset_hina_default",
+    name: "Sorasaki Hina (Default)",
+    referenceId: CHARACTERS.sorasaki_hina.defaultVoiceId,
+    characterId: "sorasaki_hina",
+  },
+  {
+    id: "preset_ichika_default",
+    name: "Nakamasa Ichika (Default)",
+    referenceId: CHARACTERS.nakamasa_ichika.defaultVoiceId,
+    characterId: "nakamasa_ichika",
+  },
+];
 
 interface VoiceSettings {
   enabled: boolean;
   apiKey: string;
   referenceId: string;
   language: VoiceLanguage;
+  presets: VoicePreset[];
 }
 
 const defaults: VoiceSettings = {
   enabled: false,
   apiKey: "",
-  referenceId: DEFAULT_REFERENCE_ID,
+  referenceId: CHARACTERS.takanashi_hoshino.defaultVoiceId,
   language: "ja",
+  presets: DEFAULT_PRESETS,
 };
 
 export function useVoice() {
@@ -32,7 +63,14 @@ export function useVoice() {
     queueMicrotask(() => {
       try {
         const saved = localStorage.getItem(STORAGE_KEY_VOICE);
-        if (saved) setSettings({ ...defaults, ...JSON.parse(saved) });
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setSettings({
+            ...defaults,
+            ...parsed,
+            presets: parsed.presets && parsed.presets.length > 0 ? parsed.presets : DEFAULT_PRESETS,
+          });
+        }
       } catch {}
     });
   }, []);
@@ -59,8 +97,43 @@ export function useVoice() {
 
   useEffect(() => stop, [stop]);
 
+  const addPreset = useCallback(
+    (name: string, referenceId: string, characterId?: CharacterId) => {
+      if (!name.trim() || !referenceId.trim()) return;
+      const newPreset: VoicePreset = {
+        id: `preset_${Date.now()}`,
+        name: name.trim(),
+        referenceId: referenceId.trim(),
+        characterId,
+      };
+      const nextPresets = [...settings.presets, newPreset];
+      updateSettings({ presets: nextPresets, referenceId: newPreset.referenceId });
+    },
+    [settings.presets, updateSettings]
+  );
+
+  const deletePreset = useCallback(
+    (id: string) => {
+      const nextPresets = settings.presets.filter((p) => p.id !== id);
+      updateSettings({ presets: nextPresets });
+    },
+    [settings.presets, updateSettings]
+  );
+
+  const selectPreset = useCallback(
+    (referenceId: string) => {
+      updateSettings({ referenceId });
+    },
+    [updateSettings]
+  );
+
   const speak = useCallback(
-    async (text: string, geminiApiKey: string, showText: () => void) => {
+    async (
+      text: string,
+      geminiApiKey: string,
+      showText: () => void,
+      fallbackVoiceId?: string
+    ) => {
       if (!settings.enabled || !settings.apiKey.trim() || !text.trim()) {
         showText();
         return;
@@ -83,6 +156,11 @@ export function useVoice() {
         finish();
       };
 
+      const finalVoiceId =
+        settings.referenceId.trim() ||
+        fallbackVoiceId ||
+        CHARACTERS.takanashi_hoshino.defaultVoiceId;
+
       try {
         const response = await fetch("/api/voice", {
           method: "POST",
@@ -90,7 +168,7 @@ export function useVoice() {
           body: JSON.stringify({
             text,
             apiKey: settings.apiKey.trim(),
-            referenceId: settings.referenceId.trim() || DEFAULT_REFERENCE_ID,
+            referenceId: finalVoiceId,
             language: settings.language,
             geminiApiKey,
           }),
@@ -138,6 +216,10 @@ export function useVoice() {
     setFishAudioReferenceId: (referenceId: string) => updateSettings({ referenceId }),
     voiceLanguage: settings.language,
     setVoiceLanguage: (language: VoiceLanguage) => updateSettings({ language }),
+    presets: settings.presets,
+    addPreset,
+    deletePreset,
+    selectPreset,
     isPlaying,
     isFetching,
     skipAudio: () => skipRef.current?.(),
@@ -145,3 +227,4 @@ export function useVoice() {
     stop,
   };
 }
+

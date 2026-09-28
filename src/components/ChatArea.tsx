@@ -1,8 +1,11 @@
 "use client";
 
 import type { ChatMessage } from "@/lib/gemini";
+import type { CharacterId } from "@/lib/emotionMap";
+import { CHARACTERS } from "@/lib/emotionMap";
 
 interface Props {
+  character?: CharacterId;
   messages: ChatMessage[];
   loading: boolean;
   spriteTransform: { x: number; y: number; scale: number };
@@ -13,6 +16,7 @@ interface Props {
 }
 
 export default function ChatArea({
+  character = "takanashi_hoshino",
   messages,
   loading,
   isVoicePlaying,
@@ -21,11 +25,18 @@ export default function ChatArea({
   theme = "dark",
 }: Props) {
   const latestMessage = messages[messages.length - 1];
-  const latestHoshinoMsg = [...messages].reverse().find((m) => m.role === "hoshino");
+  const latestCharMsg = [...messages].reverse().find((m) => m.role === "hoshino");
   const latestUserMsg = [...messages].reverse().find((m) => m.role === "user");
 
+  const charMeta = CHARACTERS[character] || CHARACTERS.takanashi_hoshino;
   const isThinkingState = loading && latestMessage?.role === "user";
   const isDark = theme === "dark";
+
+  const defaultGreetings: Record<CharacterId, string> = {
+    takanashi_hoshino: "Uhe~ Sensei... ada apa? Hoshino lagi santai nih...",
+    sorasaki_hina: "Sensei... akhirnya ada waktu berdua. Ada tugas yang perlu kubantu?",
+    nakamasa_ichika: "Hehe~ Sensei, halo~ Ada perlu sesuatu denganku hari ini?",
+  };
 
   return (
     <div className="relative w-full flex-1 flex flex-col justify-end pointer-events-none px-4 md:px-8 pb-3">
@@ -44,8 +55,8 @@ export default function ChatArea({
         <div className={`dialogue-wrap dialogue-wrap--${theme}`}>
           {/* Speaker Badge */}
           <div className="speaker-tag flex items-center gap-2">
-            <span>Takanashi Hoshino</span>
-            <span className="text-[10px] opacity-75 font-medium">小鳥遊ホシノ</span>
+            <span>{charMeta.fullName}</span>
+            <span className="text-[10px] opacity-75 font-medium">{charMeta.jpName}</span>
             {(isVoicePlaying || isVoiceFetching) && (
               <span className="flex items-center gap-[2.5px] ml-1">
                 <span className={`w-[3px] h-3 ${isDark ? "bg-cyan-950" : "bg-cyan-700"} rounded-full animate-[voiceBar1_0.6s_ease-in-out_infinite]`} />
@@ -77,7 +88,7 @@ export default function ChatArea({
               </div>
             ) : (
               <p className="whitespace-pre-wrap">
-                {latestHoshinoMsg?.text || "Uhe~ Sensei... ada apa? Hoshino lagi santai nih..."}
+                {latestCharMsg?.text || defaultGreetings[character] || "Uhe~ Sensei..."}
               </p>
             )}
           </div>
