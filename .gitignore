@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# blue-archive ui component assets
+/blue-archive-ui-component
+/blue-archive-ui-component.zip
